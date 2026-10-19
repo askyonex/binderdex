@@ -1,0 +1,23 @@
+{
+  "name": "Mein Pokédex",
+  "short_name": "Pokédex",
+  "description": "Meine Pokémon-Kartensammlung",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#08131d",
+  "theme_color": "#d62d2d",
+  "lang": "de",
+  "icons": [
+    {
+      "src": "/static/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/static/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

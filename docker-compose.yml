@@ -1,0 +1,18 @@
+# Minimal setup. Start with:  docker compose up -d --build
+services:
+  binderdex:
+    build: .
+    container_name: binderdex
+    restart: unless-stopped
+    environment:
+      TZ: "Europe/Berlin"
+      # Optional AI help for the camera (can also be set in the app, see docs/ai-scan.md):
+      # AI_PROVIDER: "ollama"
+      # OLLAMA_URL: "http://192.168.0.50:11434"
+      # OLLAMA_MODEL: "qwen3-vl:8b"
+    ports:
+      # Reachable from this machine only. To use it from other devices in your
+      # home network change it to "5000:5000" (the app has NO login, never expose it to the internet).
+      - "127.0.0.1:5000:5000"
+    volumes:
+      - ./data:/data   # the SQLite database lives here, back this folder up

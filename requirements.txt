@@ -1,0 +1,3 @@
+flask>=3.0
+openpyxl>=3.1   # Excel export with card images (optional)
+pillow>=10.0    # thumbnails for the Excel export (optional)

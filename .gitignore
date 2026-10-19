@@ -1,0 +1,28 @@
+# Your collection and local data (never commit these)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.db.bak-*
+data/
+backups/
+test.db
+
+# Local settings with passwords or keys
+.env
+deploy.json
+
+# Python
+__pycache__/
+*.pyc
+venv/
+.venv/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Local notes
+*.local.md

@@ -1,0 +1,7 @@
+# Reverse proxy with an internal certificate (needed for the camera on other devices).
+# Replace the name with a name that points to your server in your local DNS.
+# Do not use ".local" (it clashes with mDNS), use ".home.arpa" or ".lan".
+binderdex.home.arpa {
+    tls internal
+    reverse_proxy binderdex:5000
+}

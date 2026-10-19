@@ -1,0 +1,2094 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mein Pokédex</title>
+<link rel="manifest" href="/static/manifest.json">
+<link rel="icon" href="/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16.png">
+<link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
+<meta name="theme-color" content="#d62d2d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Pokédex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<style>
+:root{--red:#d62d2d;--red-d:#8a1b1b;--navy:#08131d;--panel:#0b1f2e;--tile:#0e2a3b;--cyan:#5ce1e6;--cyan-d:#1f6f85;--txt:#9ef7ff;--mute:#7fb0c0;--yel:#ffcb05;--yel-d:#a07d00;--green:#5ee08a;--blue:#2d7be5;
+  --px:"Press Start 2P",monospace;--vt:"VT323",monospace}
+*{box-sizing:border-box}
+body{margin:0;background:var(--navy);color:var(--txt);font:22px/1.15 var(--vt)}
+header{position:sticky;top:0;z-index:5;background:var(--red);padding:18px 40px 26px;border-radius:0 0 36px 36px;box-shadow:0 6px 0 var(--red-d)}
+.top{display:flex;align-items:center;gap:20px;flex-wrap:wrap}
+.lens{position:relative;width:76px;height:76px;padding:0;border-radius:50%;border:6px solid #fff;background:var(--blue);box-shadow:0 0 0 5px var(--navy);cursor:pointer}
+.lens::after{content:"";position:absolute;left:14px;top:12px;width:20px;height:14px;border-radius:50%;background:#d8efff}
+.lens:hover{filter:brightness(1.12)}.lens:active{transform:none;box-shadow:0 0 0 5px var(--navy)}
+.lens.on{box-shadow:0 0 0 5px var(--navy),0 0 18px 8px #8fd0ff}
+.leds{display:flex;gap:8px}.leds i{width:16px;height:16px;border-radius:50%;box-shadow:0 0 0 3px var(--navy)}
+.ledbtn{--c:var(--green);position:relative;width:16px;height:16px;min-width:0;padding:0;border:0;border-radius:50%;background:var(--c);box-shadow:0 0 0 3px var(--navy);cursor:pointer;transition:transform .15s,box-shadow .15s}
+.ledbtn.lr{--c:#ff6b6b}.ledbtn.ly{--c:var(--yel)}.ledbtn.lg{--c:var(--green)}
+.ledbtn::before{content:"";position:absolute;inset:-7px;border-radius:50%}
+.ledbtn:hover,.ledbtn:focus-visible{transform:scale(1.25);box-shadow:0 0 0 3px var(--navy),0 0 12px 3px var(--c)}
+.ledbtn:active{transform:scale(1.1);box-shadow:0 0 0 3px var(--navy)}
+.ledbtn[aria-expanded="true"]{box-shadow:0 0 0 3px var(--navy),0 0 14px 5px var(--c);animation:ledglow 1.6s ease-in-out infinite}
+.ledbtn.act::after{content:"";position:absolute;inset:5px;border-radius:50%;background:var(--navy)}
+@keyframes ledglow{50%{box-shadow:0 0 0 3px var(--navy),0 0 6px 2px var(--c)}}
+.xpanel{display:none;align-items:center;gap:10px 14px;flex-wrap:wrap;margin:14px 0 2px;padding:10px 14px;background:var(--navy);border-radius:12px;box-shadow:0 0 0 3px var(--cyan-d)}
+.xpanel.open{display:flex;animation:xdrop .18s ease-out}
+@keyframes xdrop{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+.xpanel .xlab{margin-right:4px;font:9px/1.4 var(--px)}
+#xpRed .xlab{color:#ff8a8a}#xpYel .xlab{color:var(--yel)}#xpGrn .xlab{color:var(--green)}
+.xpanel .mlab{display:inline-flex;align-items:center;gap:8px}.xpanel .mlab span{display:none;font:8px/1.4 var(--px);color:var(--cyan)}
+#xpGrn .mlab:first-of-type span{display:inline}
+.xpanel label{color:#fff}
+@media (min-width:701px){#statBtn,#binderBtn,#quizBtn,#gradeBtn,#prices,#apprRow{display:none}}
+@media (prefers-reduced-motion:reduce){.ledbtn[aria-expanded="true"],.xpanel.open{animation:none}}
+h1{margin:0;flex:1;font:400 20px/1.4 var(--px);color:#fff;text-transform:uppercase;text-shadow:3px 3px 0 var(--navy)}
+.stats{margin-left:auto;flex:1;min-width:280px;max-width:420px;background:var(--navy);border-radius:12px;padding:12px 16px;box-shadow:0 0 0 3px var(--cyan-d)}
+.stats>div:first-child{font:11px/1.6 var(--px);color:var(--cyan)}
+#sync{font-size:9px;color:var(--mute)}
+.hp{height:14px;background:var(--tile);margin:10px 0 8px}
+.hp i{display:block;height:100%;width:0;background:repeating-linear-gradient(90deg,var(--cyan) 0 8px,transparent 8px 10px)}
+#vals{font-size:20px;color:var(--yel)}
+.row{display:flex;flex-wrap:wrap;gap:12px;margin-top:18px;align-items:center}
+.mode{color:#fff;font-size:21px}.mode label{display:flex;align-items:center;gap:8px}
+input,select{font:22px var(--vt);padding:5px 12px;border-radius:6px;border:2px solid var(--cyan-d);background:var(--navy);color:var(--txt)}
+input::placeholder{color:#4f8396}
+select option{background:var(--navy);color:var(--txt)}
+input[type=checkbox],input[type=range]{accent-color:var(--yel)}
+input[type=checkbox]{width:18px;height:18px;padding:0}
+button{font:10px/1.4 var(--px);padding:12px 14px;border-radius:6px;border:2px solid var(--navy);background:var(--yel);color:var(--navy);cursor:pointer;box-shadow:0 4px 0 var(--yel-d)}
+button:active{transform:translateY(2px);box-shadow:0 2px 0 var(--yel-d)}
+button.alt{background:var(--navy);color:#fff;border-color:#fff;box-shadow:0 4px 0 var(--red-d)}
+button.alt:active{box-shadow:0 2px 0 var(--red-d)}
+:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
+#set{width:280px}#num{width:110px}
+.dialog{margin:18px 40px;padding:16px 18px;background:var(--panel);border:2px solid var(--cyan);border-radius:12px;color:var(--txt)}
+#cam{display:none;gap:18px;flex-wrap:wrap}#msg{display:none}
+#camTools{display:none;gap:12px;align-items:center;flex-wrap:wrap}#zoomR{width:160px}
+.ocr{color:var(--mute)}
+#vwrap{position:relative;width:420px;max-width:100%}
+#video{width:100%;display:block;border-radius:8px;background:#000}
+#zoneBox{position:absolute;left:0;right:0;bottom:0;height:30%;border:3px solid var(--yel);border-radius:0 0 8px 8px;pointer-events:none}
+#crop{width:420px;max-width:100%;border-radius:6px;display:block;margin-top:6px}
+#raw{display:none;margin:0;white-space:pre-wrap;font:18px/1.1 var(--vt)}#cam.dbg #raw{display:block}#cam.dbg #crop{display:block}
+.cmp{display:flex;gap:16px;flex-wrap:wrap;margin:10px 0}
+figure{position:relative;margin:0;text-align:center;font-size:19px;color:var(--mute);max-width:210px}
+figure img{width:200px;border-radius:8px;display:block;margin-bottom:4px}
+figure b{color:#fff}figure button{margin-top:6px}
+#grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(176px,1fr));gap:20px;margin:32px 40px 44px;padding:28px;background:var(--panel);border-radius:18px;box-shadow:0 0 0 3px var(--cyan-d)}
+.t{position:relative;background:var(--tile);border-radius:10px;padding:10px 10px 12px;text-align:center;min-height:200px;box-shadow:0 0 0 2px var(--cyan)}
+.t{cursor:pointer}
+.t.own:hover{transform:translateY(-2px)}
+.t img{width:100%;aspect-ratio:3/4;object-fit:contain;display:block;border-radius:6px}
+.t.miss{background:#0a1d2b;box-shadow:0 0 0 2px #1f4f5f;color:var(--mute)}
+.t.miss img{padding:8px;filter:brightness(0) invert(1) opacity(.18)}
+.no{display:block;margin-top:10px;font:9px/1.4 var(--px);color:var(--mute)}
+.nm{margin-top:2px;font-size:26px;line-height:1.05;color:#fff}
+.t.miss .nm{color:var(--mute)}
+.t small{display:block;color:var(--mute);font-size:19px;line-height:1.05}
+.ball{display:inline-block;position:relative;width:12px;height:12px;margin-right:6px;vertical-align:-1px;border-radius:50%;box-shadow:0 0 0 1px #fff;
+  background:linear-gradient(var(--red) 0 42%,var(--navy) 42% 58%,#fff 58%)}
+.ball::after{content:"";position:absolute;left:50%;top:50%;width:4px;height:4px;margin:-2px 0 0 -2px;border-radius:50%;background:#fff;border:1px solid var(--navy)}
+.price{display:inline-block;margin-top:6px;padding:5px 7px;border-radius:3px;background:var(--yel);color:var(--navy);font:9px/1.2 var(--px)}
+.fav{position:absolute;right:6px;bottom:6px;z-index:2;padding:4px;cursor:pointer;line-height:0;user-select:none}
+.favi{display:inline-block;vertical-align:middle;margin-right:8px;cursor:pointer;line-height:0;user-select:none}
+.fav svg,.favi svg{display:block}
+.dexbox{margin:12px 0;padding:10px 14px;background:#0a2a3a;border:2px solid var(--cyan);border-radius:10px;font-size:22px;text-align:left;color:var(--txt)}
+.dexbox b{font:400 10px/1.7 var(--px);color:var(--cyan)}.dexbox p{margin:6px 0;color:#fff;line-height:1.1}.dexbox small{color:var(--mute);font-size:18px}
+#mdex{padding:0 18px}#mtools{padding:14px 18px 0}
+.lang,.cnt{position:absolute;top:12px;z-index:1;padding:3px 5px;border-radius:3px;font:8px/1.2 var(--px)}
+.lang{right:12px}.cnt{left:12px;background:var(--navy);color:var(--cyan);border:1px solid var(--cyan)}
+.cnt.wsh{border-color:var(--yel);color:var(--yel)}
+.lang.de{background:var(--yel);color:var(--navy)}.lang.en{background:var(--blue);color:#fff}.lang.ja{background:var(--red);color:#fff}
+.chk{position:absolute;right:14px;top:42px;z-index:1;width:22px;height:22px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center}
+.noimg{aspect-ratio:3/4;display:flex;align-items:center;justify-content:center;text-align:center;padding:8px;border:2px dashed #1f4f5f;border-radius:6px;color:var(--mute);font-size:18px;
+  background:repeating-linear-gradient(45deg,#0a1d2b,#0a1d2b 8px,var(--tile) 8px,var(--tile) 16px)}
+figure .noimg{width:200px}
+#mfilter{display:none;gap:8px;flex-wrap:wrap;padding:14px 18px 0}
+#modal,#smodal,#cmodal,#pmodal{display:none;position:fixed;inset:0;background:rgba(4,10,16,.88);overflow:auto}
+#modal,#smodal,#pmodal{z-index:10}#cmodal{z-index:15}
+#mbox,#sbox,#pbox{max-width:1100px;margin:30px auto;background:var(--panel);border:3px solid var(--cyan-d);border-radius:18px;overflow:hidden}
+#mbox{max-width:1000px}
+#mhead,#shead,#phead{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 18px;background:var(--red);border-bottom:4px solid var(--navy);color:#fff}
+#shead,#phead{justify-content:flex-start}
+#mhead h2,#shead h2,#phead h2{margin:0;flex:1;font:400 13px/1.5 var(--px);color:#fff;text-shadow:2px 2px 0 var(--navy)}
+#mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;padding:18px}
+.mc{position:relative;padding:10px;background:var(--tile);border-radius:10px;box-shadow:0 0 0 2px var(--cyan);font-size:20px;color:#fff}
+.mc img{width:100%;border-radius:6px;display:block}
+.mc small{display:block;color:var(--mute);font-size:18px}
+.acts{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.acts button{padding:9px 10px;font-size:9px}
+#stools{display:none;gap:8px;flex-wrap:wrap;padding:14px 18px 0}
+#sbody{padding:14px 18px 18px}
+.ser{margin:18px 0 10px;font:400 11px/1.5 var(--px);color:var(--yel)}
+.setgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px}
+.setcard{padding:10px;background:var(--tile);border-radius:10px;box-shadow:0 0 0 2px var(--cyan-d);text-align:center;cursor:pointer;font-size:20px;color:#fff;line-height:1.1}
+.setcard:hover,.sc:hover{transform:translateY(-2px)}
+.setcard b{font-weight:400}
+.setcard img{display:block;max-width:100%;max-height:60px;object-fit:contain;margin:0 auto 6px;padding:4px;background:#fff;border-radius:6px}
+.setcard small{display:block;color:var(--mute);font-size:18px}
+.sgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:12px}
+.sc{position:relative;padding:8px;background:var(--tile);border-radius:10px;box-shadow:0 0 0 2px #1f4f5f;text-align:center;cursor:pointer;font-size:19px;line-height:1.1;color:#fff}
+.sc.own{box-shadow:0 0 0 2px var(--cyan)}
+.sc img{width:100%;aspect-ratio:3/4;object-fit:contain;display:block;border-radius:6px}
+.sc b{font:400 9px/1.6 var(--px);color:var(--mute)}.sc small{color:var(--mute);font-size:18px}
+#pinfo{padding:6px 18px 0}#pbody{padding:14px 18px 18px}
+#cbox{max-width:620px;margin:50px auto}
+#cbody{padding:16px 18px;background:var(--panel);border:2px solid var(--cyan);border-radius:12px;color:var(--txt)}
+#msg .acts button,#cbody .acts button{padding:11px 14px;font-size:10px}
+.ov{display:none;position:fixed;inset:0;z-index:10;background:rgba(4,10,16,.88);overflow:auto}
+.bx{max-width:1000px;margin:30px auto;background:var(--panel);border:3px solid var(--cyan-d);border-radius:18px;overflow:hidden}
+.hd{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:12px 18px;background:var(--red);border-bottom:4px solid var(--navy);color:#fff}
+.hd h2{margin:0;flex:1;font:400 13px/1.5 var(--px);color:#fff;text-shadow:2px 2px 0 var(--navy)}
+.bd{padding:14px 18px 22px}
+.sumgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.sum{padding:12px 14px;background:var(--tile);border-radius:10px;box-shadow:0 0 0 2px var(--cyan)}
+.sum b{display:block;font:400 14px/1.5 var(--px);color:#fff}.sum small{color:var(--mute);font-size:19px}
+.sbar{flex:1;height:12px;background:var(--tile);min-width:80px}
+.sbar i{display:block;height:100%;background:repeating-linear-gradient(90deg,var(--cyan) 0 8px,transparent 8px 10px)}
+.grow{display:flex;align-items:center;gap:12px;margin:6px 0}.grow .gl{width:190px;font-size:21px;color:#fff}.grow .gn{width:96px;text-align:right;color:var(--mute)}
+.chart{width:100%;height:auto;background:var(--tile);border-radius:10px}
+.topg{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px}
+.ach{display:inline-block;margin:4px 6px 4px 0;padding:8px 12px;background:var(--tile);border-radius:8px;box-shadow:0 0 0 2px var(--yel);font-size:21px;color:#fff;line-height:1.1}
+.ach small{display:block;color:var(--mute);font-size:18px}.ach.lock{box-shadow:0 0 0 2px #1f4f5f;opacity:.5}
+a.lnk{display:inline-block;padding:10px 12px;border-radius:6px;border:2px solid #fff;background:var(--navy);color:#fff;text-decoration:none;font:9px/1.4 var(--px);box-shadow:0 4px 0 var(--red-d)}
+textarea{width:100%;padding:8px 10px;font:20px/1.1 var(--vt);background:var(--navy);color:var(--txt);border:2px solid var(--cyan-d);border-radius:6px}
+.mc img,figure img{cursor:zoom-in}
+#lb{display:none;position:fixed;inset:0;z-index:30;padding:16px;flex-direction:column;align-items:center;justify-content:center;background:rgba(4,10,16,.93);cursor:zoom-out}
+#lb img{max-width:92vw;max-height:80vh;border-radius:14px;box-shadow:0 0 0 3px var(--cyan)}
+#lbcap{margin-top:12px;color:#fff;font-size:22px;text-align:center}
+.vrow{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-top:6px}
+.vsel,.pown{font-size:18px;padding:2px 6px;max-width:100%}.pown{width:112px}
+.vnote{display:block;color:var(--mute);font-size:17px;line-height:1.05}
+#mexport{display:none;gap:12px;align-items:center;flex-wrap:wrap;padding:14px 18px 0;color:#fff}
+#mexport label{display:flex;align-items:center;gap:6px;font-size:20px}
+#menuWrap{display:contents}
+.mh,.mclose,.burger{display:none}
+.mlab{display:contents}.mlab span{display:none}
+.menubtn{padding:0;border:0;border-radius:0;background:none;box-shadow:none;font:inherit;color:inherit;text-transform:inherit;text-shadow:inherit;letter-spacing:inherit;text-align:left;cursor:default}
+.menubtn:active{transform:none;box-shadow:none}
+.foot{margin:0 40px 32px;color:var(--mute);font-size:18px;line-height:1.1;text-align:center}
+.sc .dxl{display:block;color:var(--cyan);margin-top:2px}
+.sct{display:flex;flex-direction:column}.sct .scn{margin-top:4px}.sct .qtyc{margin-top:auto;padding-top:8px}
+.qtyc{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px}
+.qtyc button{padding:7px 12px;font-size:12px;min-width:40px}
+.qtyc button:disabled{opacity:.35;cursor:default;box-shadow:none}
+.qn{min-width:38px;text-align:center;font:10px/1 var(--px);color:#fff}
+/* Designs (Farbschemata), Hinweise, neue Ansichten */
+:root[data-theme="blau"]{--red:#2d6fd6;--red-d:#1c4a96}
+:root[data-theme="gelb"]{--red:#d99a00;--red-d:#8f6600}
+:root[data-theme="smaragd"]{--red:#2e9f5a;--red-d:#1c6a3a}
+:root[data-theme="purpur"]{--red:#7a4fd6;--red-d:#4f2f96}
+:root[data-theme="silber"]{--red:#7d8794;--red-d:#4d5560}
+:root[data-theme="nacht"]{--red:#3a3f5c;--red-d:#20233a;--navy:#05080d;--panel:#080f17;--tile:#0a1822}
+.toasts{position:fixed;right:14px;top:14px;z-index:60;display:flex;flex-direction:column;gap:8px;max-width:min(360px,92vw)}
+.toast{padding:10px 14px;background:var(--panel);border:3px solid var(--yel);border-radius:10px;color:#fff;font-size:21px;line-height:1.1;box-shadow:0 6px 0 rgba(0,0,0,.4)}
+.toast b{display:block;margin-bottom:4px;font:400 10px/1.5 var(--px);color:var(--yel)}
+.chip{margin-top:8px;padding:5px 10px;border-radius:6px;background:var(--yel);color:var(--navy);font:9px/1.4 var(--px);cursor:pointer}
+.chg{display:inline-block;margin-left:6px;font-size:19px}.chg.good{color:var(--green)}.chg.bad{color:#ff7a7a}.tri{vertical-align:0}
+.vrow .csel{max-width:70px}
+.achgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-bottom:6px}
+.achgrid .ach{display:flex;flex-direction:column;gap:3px;margin:0;min-width:0}
+.achgrid .ach b{word-break:break-word}.achgrid .ach .abar{margin-top:auto}.achgrid .ach .acnt{margin-top:2px}
+.ach.done .abar i{background:var(--yel)}.ach.done .acnt{color:var(--yel)}
+.ach.lock{opacity:.8}.ach.lock b{color:var(--mute)}
+.achcat{margin:16px 0 4px;font:400 10px/1.5 var(--px);color:var(--cyan)}
+.ach .abar{display:block;height:6px;margin:5px 0 2px;background:var(--panel)}.ach .abar i{display:block;height:100%;background:var(--cyan)}
+.potd{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:12px;background:#0a2a3a;border:2px solid var(--yel);border-radius:10px}
+.potd img{width:110px;height:110px;object-fit:contain}.potd p{margin:4px 0}
+#bmodal,#qmodal{z-index:9}#sumodal{z-index:12}
+.bnav{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:12px;color:#fff}
+.bpage{display:grid;grid-template-columns:repeat(var(--cols,3),1fr);gap:12px}
+.bslot{position:relative;padding:8px;background:var(--tile);border-radius:10px;box-shadow:0 0 0 2px #1f4f5f;text-align:center;font-size:19px;line-height:1.1;color:#fff;cursor:pointer}
+.bslot.own{box-shadow:0 0 0 2px var(--cyan)}.bslot img{width:100%;aspect-ratio:3/4;object-fit:contain;display:block;border-radius:6px}
+.bslot.miss img{padding:12px;filter:brightness(0) invert(1) opacity(.18)}.bslot .bn{position:absolute;left:10px;top:10px;z-index:1;font:8px/1.2 var(--px);color:var(--mute)}
+.bslot .bt{margin-top:6px}.bslot .bt b{font:9px/1.4 var(--px);color:var(--mute)}
+.qstage{padding:10px;background:#e9f3ff;border-radius:12px;text-align:center}
+.qimg{width:240px;height:240px;max-width:100%;object-fit:contain;filter:brightness(0);transition:filter .5s}.qimg.rev{filter:none}
+.qtop{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-bottom:10px;color:#fff}
+.qopts{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:10px 0}
+.qopt{padding:14px 10px;font-size:11px}.qopt.ok{background:var(--green);color:var(--navy);opacity:1}.qopt.bad{background:#ff7a7a;color:var(--navy);opacity:1}
+.qopt:disabled{cursor:default}
+#aimodal{z-index:11}#aimodal label{display:block;margin:10px 0;color:#fff}#aimodal input,#aimodal select{width:100%;margin-top:4px}
+#aiMsg{margin-top:10px;color:#fff;line-height:1.1}
+#gmodal{z-index:12}
+.gedit{display:block;width:88%;margin:6px 0;border-radius:8px;touch-action:none;cursor:crosshair;background:#000}
+#gloupe{position:fixed;right:14px;top:70px;width:120px;height:120px;border:3px solid var(--yel);border-radius:8px;z-index:30;display:none;background:#000}
+.gsec{margin:14px 0;padding:12px;background:var(--panel);border-radius:10px;box-shadow:0 0 0 2px #1f4f5f;color:#fff;line-height:1.1}
+.gbig{margin:6px 0;font:400 30px/1.1 var(--px)}
+.gsec .gnum{width:84px}.gsec label{display:inline-block;margin:4px 12px 4px 0}
+.gtbl{width:100%;border-collapse:collapse;margin-top:8px}.gtbl td,.gtbl th{padding:5px 6px;border-bottom:1px solid #1f4f5f;text-align:left}
+.gdef{margin:2px 0;color:var(--mute)}
+#vmodal{z-index:12}
+.vctl{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin-bottom:10px;color:#fff}
+.vtbl{width:100%;border-collapse:collapse;color:#fff}.vtbl td,.vtbl th{padding:6px;border-bottom:1px solid #1f4f5f;text-align:left;vertical-align:middle}
+.vtbl img{width:44px;border-radius:4px;display:block}.vtbl input[type=number]{width:84px}.vtbl select{width:74px}
+.vtbl tr.off td{opacity:.45}.vfoot{position:sticky;bottom:0;margin-top:10px;padding:10px 0;background:var(--navy);display:flex;flex-wrap:wrap;gap:10px;align-items:center;color:#fff}
+.vstep{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;color:#fff}.vstep img{width:220px;max-width:100%;border-radius:10px}
+.vval{display:grid;grid-template-columns:auto auto auto;gap:8px 12px;align-items:center;margin:10px 0}.vval b{font:400 11px/1.4 var(--px);color:var(--yel)}
+.vval button{padding:5px 10px;font-size:9px}.cmtag{border-color:var(--yel)!important;color:var(--yel)!important}
+@media (max-width:700px){.vtbl .vhide{display:none}.vtbl input[type=number]{width:66px}}
+@media (max-width:700px){
+  .ledbtn{pointer-events:none}.xpanel,.xpanel.open{display:none}
+  .menubtn{display:flex;align-items:center;gap:12px;cursor:pointer}
+  .menubtn[aria-expanded="false"] .b2,.menubtn[aria-expanded="true"] .b1{display:none}
+  .burger{display:block}
+  #menuWrap{display:none;margin-top:14px;padding:2px 14px 16px;background:var(--navy);border-radius:12px;box-shadow:0 0 0 3px var(--cyan-d)}
+  #menuWrap.open{display:block}
+  #menuWrap .row{flex-direction:column;align-items:stretch;gap:10px;margin-top:10px}
+  #menuWrap button{width:100%}
+  .mh{display:block;margin-top:14px;font:9px/1.4 var(--px);color:var(--yel)}
+  .mlab{display:block}.mlab span{display:block;margin-bottom:4px;font:8px/1.4 var(--px);color:var(--cyan)}.mlab select{width:100%}
+  #menuWrap .mode label{align-items:stretch}
+  #menuWrap .mode>label:first-of-type{flex-direction:column;gap:6px}
+  #menuWrap .mode>.mlab{display:flex;flex-direction:column;gap:4px}#menuWrap .mode>.mlab span{margin:0}
+  #menuWrap .mode select{width:100%}
+  #dexStartL{display:flex;gap:8px}#dexStartL button{width:auto;flex:1}
+  .mclose{display:block;margin-top:16px}
+  #addrow{gap:10px;margin-top:14px}
+  #addrow #set{order:1;flex:1 1 100%}#addrow #lang{order:2;flex:1;min-width:0}#addrow #num{order:3;flex:1;min-width:0}
+  #addrow #add{order:4}#addrow #search{order:5;flex:1 1 100%;width:100%}
+  .foot{margin:0 14px 24px}
+  .bx{margin:10px}.grow .gl{width:120px;font-size:19px}
+  header{position:static;padding:14px 16px 22px;border-radius:0 0 24px 24px}
+  .lens{width:60px;height:60px}.lens::after{left:11px;top:9px;width:16px;height:11px}
+  h1{font-size:14px}.stats{flex-basis:100%;max-width:none}
+  #set{width:100%}#vwrap{width:100%}#crop{display:none}
+  #grid{margin:16px 10px 28px;padding:12px;gap:12px;grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+  .dialog{margin:12px 10px}
+  #sbox,#mbox,#pbox{margin:10px}
+  body.camon #msg{position:fixed;left:0;right:0;bottom:0;margin:0;z-index:20;max-height:65vh;overflow:auto;border-radius:14px 14px 0 0;box-shadow:0 -4px 0 var(--cyan-d)}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <button class="lens" id="camBtn" title="Kamera ein/aus" aria-label="Kamera ein/aus"></button><div class="leds"><button id="ledRed" class="ledbtn lr" data-panel="xpRed" aria-expanded="false" aria-controls="xpRed" title="Extras: Statistik, Binder, Quiz, Grading-Check, Preise" aria-label="Extras öffnen oder schließen"></button><button id="ledYel" class="ledbtn ly" data-panel="xpYel" aria-expanded="false" aria-controls="xpYel" title="Einstellungen: Design, Binder-Seite, Töne" aria-label="Einstellungen öffnen oder schließen"></button><button id="ledGrn" class="ledbtn lg" data-panel="xpGrn" aria-expanded="false" aria-controls="xpGrn" title="Filter und Sortierung" aria-label="Filter und Sortierung öffnen oder schließen"></button></div>
+    <h1><button id="menuBtn" class="menubtn" aria-expanded="false" aria-controls="menuWrap" title="Menü öffnen oder schließen">Mein Pokédex
+      <svg class="burger b1" viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" stroke="#fff" stroke-width="3" stroke-linecap="square" fill="none"/></svg>
+      <svg class="burger b2" viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19" stroke="#fff" stroke-width="3" stroke-linecap="square" fill="none"/></svg></button></h1>
+    <div class="stats">
+      <div><span id="count"></span> gefangen <span id="sync"></span></div>
+      <div class="hp"><i id="fill"></i></div>
+      <div id="vals" title="Cardmarket-Trend in Euro, nicht sprachspezifisch"></div>
+      <div id="sessChip" class="chip" style="display:none" title="Zur Auswertung der laufenden Pack-Session"></div>
+    </div>
+  </div>
+  <div id="xpRed" class="xpanel" role="group" aria-label="Extras">
+    <span class="xlab">Extras</span>
+    <button data-proxy="statBtn">Statistik</button>
+    <button data-proxy="binderBtn">Binder</button>
+    <button data-proxy="quizBtn">Quiz</button>
+    <button data-proxy="gradeBtn">Grading-Check</button>
+    <button data-proxy="prices">Preise aktualisieren</button>
+  </div>
+  <div id="xpYel" class="xpanel" role="group" aria-label="Einstellungen"><span class="xlab">Einstellungen</span></div>
+  <div id="xpGrn" class="xpanel" role="group" aria-label="Filter und Sortierung"><span class="xlab">Filter &amp; Sortierung</span></div>
+  <div class="row" id="addrow">
+    <select id="lang" title="Sprache der Karte"><option value="auto">Sprache: Auto</option><option value="de">Deutsch</option><option value="en">Englisch</option><option value="ja">Japanisch</option></select>
+    <input id="set" list="sets" placeholder="Set (optional, sonst automatisch)" autocomplete="off">
+    <datalist id="sets"></datalist>
+    <input id="num" placeholder="147/196" autocomplete="off">
+    <button id="add">Hinzufügen</button>
+    <input id="search" placeholder="Pokémon suchen">
+  </div>
+  <div id="menuWrap">
+    <div class="row">
+      <div class="mh">Ansichten</div>
+      <button id="setsBtn" class="alt">Sets</button>
+      <button id="side" class="alt">Nebenstapel</button>
+      <button id="tradeBtn" class="alt">Tauschen</button>
+      <button id="statBtn" class="alt">Statistik</button>
+      <button id="binderBtn" class="alt">Binder</button>
+      <button id="quizBtn" class="alt">Quiz</button>
+      <button id="gradeBtn" class="alt">Grading-Check</button>
+      <div class="mh">Aktionen</div>
+      <button id="prices" class="alt">Preise aktualisieren</button>
+      <button id="sessBtn" class="alt">Pack-Session starten</button>
+      <div class="mh">Anzeige</div>
+      <label class="mlab"><span>Filter</span><select id="filter"><option value="all">Alle</option><option value="own">Gefangen</option><option value="miss">Fehlen</option><option value="fav">Favoriten</option><option value="fa">Fullart im Binder</option><option value="nofa">Kein Fullart im Binder</option></select></label>
+      <label class="mlab"><span>Generation</span><select id="gen" title="Generation"></select></label>
+      <label class="mlab"><span>Sortierung</span><select id="sort" title="Sortierung"><option value="nr">Sortierung: Pokédex-Nr.</option><option value="pdesc">Preis: hoch → niedrig</option><option value="pasc">Preis: niedrig → hoch</option><option value="cdesc">Karten: viele → wenige</option><option value="casc">Karten: wenige → viele</option><option value="fav">Favoriten zuerst</option></select></label>
+    </div>
+    <div class="row mode" id="apprRow">
+      <div class="mh">Erscheinungsbild</div>
+      <label class="mlab"><span>Design</span><select id="theme" title="Farbschema"><option value="rot">Design: Rot</option><option value="blau">Design: Blau</option><option value="gelb">Design: Gelb</option><option value="smaragd">Design: Smaragd</option><option value="purpur">Design: Purpur</option><option value="silber">Design: Silber</option><option value="nacht">Design: Nacht</option></select></label>
+      <label class="mlab"><span>Binder-Seite</span><select id="bsize" title="Fächer pro Binder-Seite"><option value="9">Binder: 9 Fächer (3×3)</option><option value="12">Binder: 12 Fächer (4×3)</option><option value="16">Binder: 16 Fächer (4×4)</option></select></label>
+      <label><input type="checkbox" id="snd"> Töne</label>
+    </div>
+    <div class="row mode">
+      <div class="mh">Nach dem Hinzufügen</div>
+      <label>Nach dem Hinzufügen vorschlagen:
+        <select id="seqMode"><option value="off">Nichts</option><option value="set">Nächste Karte im Set</option><option value="dex">Nächstes Pokémon im Pokédex</option></select></label>
+      <label id="seqSkipL"><input type="checkbox" id="seqSkip" checked> Trainer/Energie überspringen</label>
+      <label id="dexSkipL"><input type="checkbox" id="dexSkip" checked> Pokémon mit Binder-Karte überspringen</label>
+      <span id="dexStartL"><input id="pdStart" type="number" min="1" max="1025" placeholder="ab Nr." style="width:90px"> <button id="pdGo" class="alt">Durchlauf starten</button></span>
+    </div>
+    <div class="mclose"><button id="menuClose">Menü schließen</button></div>
+  </div>
+</header>
+<div id="cam" class="dialog">
+  <div><div id="vwrap"><video id="video" autoplay playsinline muted></video><div id="zoneBox"></div></div><canvas id="crop"></canvas></div>
+  <div>
+    <p>Karte ruhig halten, die Nummer (z. B. <b>F 147/196</b>) im gelben Rahmen. Die App liest automatisch mit und erkennt eine Karte, sobald zweimal dieselbe Nummer gelesen wurde. Set und Sprache werden automatisch erkannt.</p>
+    <p><label><input type="checkbox" id="autoScan" checked> Automatisch scannen</label></p>
+    <p><label>Lesebereich von unten <input type="range" id="zone" min="15" max="100" value="30"></label></p>
+    <p id="camTools"><label id="zoomL">Zoom <input type="range" id="zoomR"></label><button id="torchBtn" class="alt">Licht</button></p>
+    <select id="cams"></select> <button id="scan">Jetzt scannen</button> <span>oder Leertaste / aufs Videobild tippen</span>
+    <p><label>KI-Hilfe <select id="aiMode" title="KI zur Kartenerkennung (genauer als die reine Texterkennung)"><option value="off">Aus</option><option value="manual">Bei "Jetzt scannen"</option><option value="auto">Automatisch bei Stillstand</option></select></label>
+      <button id="aiCfg" class="alt">KI einrichten</button> <small id="aiState"></small></p>
+    <p id="ocr" class="ocr"></p>
+    <p><label><input type="checkbox" id="dbg"> Diagnose anzeigen</label></p>
+    <pre id="raw" class="ocr"></pre>
+    <p class="ocr">Tipps: etwa 15 bis 20 cm Abstand, Licht seitlich statt von vorn, bei Spiegelungen die Karte leicht kippen.</p>
+  </div>
+</div>
+<div id="msg" class="dialog" role="status"></div>
+<div id="grid"></div>
+<footer class="foot">Inoffizielles Fan-Projekt, nicht mit The Pokémon Company, Nintendo, Creatures oder Game Freak verbunden. Pokémon, Kartenmotive und Namen gehören den jeweiligen Rechteinhabern. Daten: TCGdex, PokeAPI, TCGplayer (tcgcsv.com).</footer>
+<div id="modal"><div id="mbox">
+  <div id="mhead"><h2 id="mtitle"></h2><button id="mclose" class="alt">Schließen</button></div>
+  <div id="mdex"></div><div id="mtools"><select id="msort"><option value="std">Sortierung: Standard</option><option value="pdesc">Preis: hoch → niedrig</option><option value="pasc">Preis: niedrig → hoch</option></select></div>
+  <div id="mexport"><span id="msum"></span>
+    <button id="msell">Auf Cardmarket verkaufen</button>
+    <button id="mlisted" class="alt">Gelistet</button>
+    <button id="mcsv">Verkaufsliste als CSV</button>
+    <button id="mxlsx">Excel mit Bildern</button>
+    <button id="mpage" class="alt">Verkaufsseite (Drucken/PDF)</button>
+    <label><input type="checkbox" id="mdet"> mit Zusatzspalten</label>
+    <label><input type="checkbox" id="mspare" checked> Doppelte der Binder-Karten mitnehmen</label></div>
+  <div id="mfilter"></div><div id="mgrid"></div>
+</div></div>
+<div id="smodal"><div id="sbox">
+  <div id="shead"><button id="sback" class="alt" style="display:none">‹ Sets</button><h2 id="stitle">Sets</h2><span id="slangs"></span><button id="sclose" class="alt">Schließen</button></div>
+  <div id="stools"><select id="sfilter"><option value="all">Alle</option><option value="own">Habe ich</option><option value="miss">Fehlen</option></select><input id="ssearch" placeholder="Name, Kartennr. oder Pokédex-Nr."></div>
+  <div id="sbody"></div>
+</div></div>
+<div id="stmodal" class="ov"><div class="bx">
+  <div class="hd"><h2>Statistik</h2><button id="stclose" class="alt">Schließen</button></div>
+  <div class="bd" id="stbody"></div>
+</div></div>
+<div id="tmodal" class="ov"><div class="bx">
+  <div class="hd"><h2>Wunschliste und Tauschliste</h2><button id="tclose" class="alt">Schließen</button></div>
+  <div class="bd" id="tbody"></div>
+</div></div>
+<div id="bmodal" class="ov"><div class="bx">
+  <div class="hd"><h2 id="btitle">Binder</h2><button id="bclose" class="alt">Schließen</button></div>
+  <div class="bd" id="bbody"></div>
+</div></div>
+<div id="qmodal" class="ov"><div class="bx" style="max-width:640px">
+  <div class="hd"><h2>Wer ist das Pokémon?</h2><button id="qclose" class="alt">Schließen</button></div>
+  <div class="bd" id="qbody"></div>
+</div></div>
+<div id="sumodal" class="ov"><div class="bx">
+  <div class="hd"><h2 id="sutitle">Pack-Auswertung</h2></div>
+  <div class="bd" id="subody"></div>
+</div></div>
+<div id="aimodal" class="ov"><div class="bx" style="max-width:640px">
+  <div class="hd"><h2>KI-Hilfe für die Kamera</h2><button id="aiclose" class="alt">Schließen</button></div>
+  <div class="bd">
+    <p>Die KI liest die Karte direkt aus dem Kamerabild (Name, Nummer, Set-Größe) und ist deutlich genauer als die reine Texterkennung. Die schnelle Texterkennung im Browser bleibt als Grundfunktion bestehen. Du bestätigst jede erkannte Karte weiterhin selbst.</p>
+    <label>Anbieter <select id="aiProv"><option value="">Aus</option><option value="ollama">Ollama (läuft kostenlos auf deinem PC)</option><option value="gemini">Google Gemini (kostenloser API-Schlüssel)</option></select></label>
+    <div id="aiOllama" style="display:none">
+      <label>Adresse von Ollama <input id="aiUrl" placeholder="http://192.168.0.50:11434" autocomplete="off"></label>
+      <label>Modell <input id="aiOModel" placeholder="qwen3-vl:8b" autocomplete="off"></label>
+    </div>
+    <div id="aiGemini" style="display:none">
+      <label>API-Schlüssel <input id="aiKey" type="password" placeholder="aus Google AI Studio" autocomplete="off"></label>
+      <label>Modell <input id="aiGModel" placeholder="gemini-flash-latest" autocomplete="off"></label>
+      <p><small>Hinweis: Bei der kostenlosen Stufe kann Google die gesendeten Bilder zur Verbesserung seiner Produkte nutzen, und es gelten Grenzen pro Minute und Tag.</small></p>
+    </div>
+    <div class="acts"><button id="aiTest" class="alt">Verbindung testen</button><button id="aiSave">Speichern</button></div>
+    <p id="aiMsg"></p>
+  </div></div></div>
+<div id="gmodal" class="ov"><div class="bx" style="max-width:760px">
+  <div class="hd"><h2>Grading-Check</h2><button id="glistBtn" class="alt">Gespeichert</button><button id="gclose" class="alt">Schließen</button></div>
+  <div class="bd" id="gbody"></div>
+</div></div>
+<canvas id="gloupe" width="120" height="120"></canvas>
+<div id="vmodal" class="ov"><div class="bx" style="max-width:980px">
+  <div class="hd"><h2 id="vtitle">Auf Cardmarket verkaufen</h2><button id="vclose" class="alt">Schließen</button></div>
+  <div class="bd" id="vbody"></div>
+</div></div>
+<div id="pmodal"><div id="pbox">
+  <div id="phead"><h2 id="ptitle"></h2><span id="plangs"></span><button id="pskip" class="alt">Überspringen ›</button><button id="pstop" class="alt">Beenden</button></div>
+  <div id="pinfo"></div><div id="pbody"></div>
+</div></div>
+<div id="cmodal"><div id="cbox"><div id="cbody"></div></div></div>
+<div id="toasts" class="toasts"></div>
+<div id="lb"><img id="lbimg" alt=""><div id="lbcap"></div></div>
+<script>
+const $ = s => document.querySelector(s);
+const pad = n => String(n).padStart(3, "0");
+const art = id => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
+const eur = n => n == null ? "–" : n.toLocaleString("de-DE", {style: "currency", currency: "EUR"});
+const LB = {de: "DE", en: "EN", ja: "JP"};
+const CHECK = '<svg viewBox="0 0 12 12" width="14" height="14"><polyline points="2,6.5 5,9.5 10,3" fill="none" stroke="#08131d" stroke-width="2.4" stroke-linejoin="round"/></svg>';
+const starSvg = on => `<svg viewBox="0 0 24 24" width="24" height="24"><polygon points="12,2.5 14.9,9 22,9.6 16.6,14.3 18.3,21.3 12,17.6 5.7,21.3 7.4,14.3 2,9.6 9.1,9" fill="${on ? "#ffcb05" : "none"}" stroke="${on ? "#ffcb05" : "#4f8396"}" stroke-width="1.8" stroke-linejoin="round"/></svg>`;
+const badge = (l, inBinder) => `<span class="lang ${l}">${LB[l] || ""}</span>${inBinder ? `<span class="chk" title="Liegt im Binder">${CHECK}</span>` : ""}`;   // mit grünem Haken, wenn die Karte im Binder liegt
+const post = async (url, body) => {                    // Antworten ohne Daten (Server-Fehler) werden als Fehler gemeldet statt still abzubrechen
+  const r = await fetch(url, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+  try { return await r.json(); } catch (e) { throw new Error(`Der Server meldet Fehler ${r.status} (${url}). Details stehen im Docker-Log.`); }
+};
+window.addEventListener("unhandledrejection", e => {   // nicht abgefangene Fehler sichtbar machen
+  const m = (e.reason && e.reason.message) || String(e.reason || "");
+  if (typeof toast === "function") toast("Etwas ist schiefgegangen", m); else alert(m);
+});
+const setId = () => $("#set").value.split(" – ")[0].trim();
+let rows = [], SETS = {}, DENS = [];
+
+/* Bild-Fallback: andere Formate, englische Version, zuletzt Platzhalter bzw. Pokémon-Artwork */
+let FBMAP = {};                         // Ersatzbilder (TCGplayer) der gerade offenen Set-Ansicht: Kartennummer -> URL
+const normNum = n => String(n).split("/")[0].replace(/^0+/, "").toLowerCase();
+function imgFail(el) {
+  if (!/tcgplayer|rackcdn/.test(el.src)) {
+    const b = el.dataset.base || (el.dataset.base = el.src.replace(/\/(high|low)\.(png|webp)$/, ""));
+    const en = b.replace(/assets\.tcgdex\.net\/(de|ja)\//, "assets.tcgdex.net/en/");
+    const tries = [...new Set([b + "/high.webp", b + "/low.png", en + "/high.png", en + "/low.png"])];
+    const i = +(el.dataset.i || 0);
+    if (i < tries.length) { el.dataset.i = i + 1; el.src = tries[i]; return; }
+  }
+  const fb = el.dataset.lid && FBMAP[normNum(el.dataset.lid)];
+  if (fb && !el.dataset.fb) { el.dataset.fb = 1; el.src = fb; return; }
+  if (el.dataset.dex) { el.onerror = null; el.src = art(el.dataset.dex); return; }
+  const d = document.createElement("div"); d.className = "noimg"; d.textContent = (el.alt || "Karte") + " · kein Bild verfügbar";
+  el.replaceWith(d);
+}
+const cardImg = c => c.image ? `<img src="${c.image}" alt="${c.name}" loading="lazy" onerror="imgFail(this)">` : `<div class="noimg">${c.name} · kein Bild verfügbar</div>`;
+async function load() {
+  const r = await (await fetch("/api/dex")).json();
+  rows = r.rows;
+  renderSessChip(r.session);
+  const own = rows.filter(x => x.cid).length;
+  $("#count").textContent = `${own} / ${rows.length}`;
+  $("#fill").style.width = rows.length ? own / rows.length * 100 + "%" : "0";
+  $("#side").textContent = `Nebenstapel (${r.side})`;
+  $("#vals").textContent = `Binder ${eur(r.value_binder)} · alle Karten ${eur(r.value_all)}`;
+  const p = r.progress, pr = r.prices;
+  $("#sync").textContent = p.running ? `· Lade Pokédex-Daten ${p.done}/${p.total}` : pr.running ? `· Lade Preise ${pr.done}/${pr.total}`
+    : pr.errors ? `· Preise: ${pr.errors} Fehler (${pr.last_error})` : pr.missing ? `· ${pr.missing} Karten ohne Preisdaten` : "";
+  render();
+  maybeAch();
+  if (p.running || pr.running) setTimeout(load, 2500);
+}
+
+function tile(x) {
+  const own = !!x.cid;
+  return `<div class="t ${own ? "own" : "miss"}" data-id="${x.id}" data-n="${x.n}" data-name="${x.name}">
+    ${own ? badge(x.lang) : ""}${x.total > 1 ? `<span class="cnt">${x.total} Karten</span>` : ""}
+    <span class="fav ${x.fav ? "on" : ""}" data-fav="${x.id}" title="Favorit">${starSvg(!!x.fav)}</span>
+    <img loading="lazy" src="${x.image || art(x.id)}" alt="${x.name}" data-dex="${x.id}" onerror="imgFail(this)">
+    <b class="no">${own ? '<i class="ball"></i>' : ""}Nr. ${pad(x.id)}</b><div class="nm">${x.name}</div>
+    ${own ? `<small>${x.set_name} · ${x.rarity || "–"}</small><span class="price">${eur(x.price)}</span>` : ""}</div>`;
+}
+
+const byNr = (a, b) => a.id - b.id;
+const SORTS = {
+  nr: byNr,
+  fav: (a, b) => (b.fav - a.fav) || byNr(a, b),
+  pdesc: (a, b) => ((a.price == null) - (b.price == null)) || ((b.price || 0) - (a.price || 0)) || byNr(a, b),   // ohne Preis ans Ende
+  pasc: (a, b) => ((a.price == null) - (b.price == null)) || ((a.price || 0) - (b.price || 0)) || byNr(a, b),
+  cdesc: (a, b) => ((a.total === 0) - (b.total === 0)) || (b.total - a.total) || byNr(a, b),                      // ohne Karten ans Ende
+  casc: (a, b) => ((a.total === 0) - (b.total === 0)) || (a.total - b.total) || byNr(a, b),
+};
+
+const GENS = [["I", "Kanto", 1, 151], ["II", "Johto", 152, 251], ["III", "Hoenn", 252, 386], ["IV", "Sinnoh", 387, 493], ["V", "Einall", 494, 649],
+  ["VI", "Kalos", 650, 721], ["VII", "Alola", 722, 809], ["VIII", "Galar", 810, 905], ["IX", "Paldea", 906, 1025]];
+$("#gen").innerHTML = '<option value="all">Alle Generationen</option>' + GENS.map((g, i) => `<option value="${i + 1}">Gen ${g[0]} · ${g[1]}</option>`).join("");
+const passFilter = (x, f) => f === "all" || (f === "fav" ? !!x.fav : f === "fa" ? !!(x.cid && x.fa) : f === "nofa" ? !!(x.cid && !x.fa) : (f === "own") === !!x.cid);
+const inGen = (x, g) => g === "all" || (x.id >= GENS[g - 1][2] && x.id <= GENS[g - 1][3]);
+
+function render() {
+  const f = $("#filter").value, s = $("#search").value.toLowerCase();
+  $("#grid").innerHTML = rows
+    .filter(x => passFilter(x, f) && inGen(x, $("#gen").value) && (!s || x.name.toLowerCase().includes(s) || pad(x.id).includes(s)))
+    .sort(SORTS[$("#sort").value] || byNr)
+    .map(tile).join("");
+}
+
+async function toggleFav(id) {
+  const x = rows.find(r => r.id === id); if (!x) return;
+  const on = !x.fav;
+  await post("/api/favorite", {dex_id: id, on});
+  x.fav = on ? 1 : 0; render();
+  const star = $("#mfav"); if (star && +star.dataset.fav === id) { star.classList.toggle("on", on); star.innerHTML = starSvg(on); }
+}
+
+const dexBox = (name, genus, text, game, id) => text ? `<div class="dexbox"><b>${id ? "Nr. " + pad(id) + " · " : ""}${name}${genus ? " · " + genus : ""}</b><p>${text}</p><small>Pokédex-Eintrag · Pokémon ${game}</small></div>` : "";
+
+async function loadSets() {
+  $("#set").value = "";
+  const l = $("#lang").value === "auto" ? "de" : $("#lang").value;
+  let sets = [];
+  try { sets = await (await fetch(`/api/sets?lang=${l}`)).json(); } catch (e) {}
+  if (!sets.length) { setTimeout(loadSets, 60000); return toast("Kartendatenbank nicht erreichbar", "Die Set-Liste wird in einer Minute erneut geladen. Bis dahin funktioniert die Erkennung eingeschränkt."); }
+  SETS = Object.fromEntries(sets.map(s => [s.id, s]));
+  $("#sets").innerHTML = sets.map(s => `<option value="${s.id} – ${s.name_en || s.name}">`).join("");
+}
+
+let hideT;
+function show(html) {
+  const m = $("#msg"); m.innerHTML = html; m.style.display = "block";
+  clearTimeout(hideT);
+  if (document.body.classList.contains("camon") && !m.querySelector("button")) hideT = setTimeout(() => m.style.display = "none", 5000);
+}
+
+async function add(set, number, lang) {
+  const d = await post("/api/add", {set, number, lang, src: FROM_SCAN ? "scan" : ""});
+  FROM_SCAN = false;
+  if (d.status === "notfound") return show("Karte nicht gefunden. Sprache, Set und Nummer prüfen.");
+  if (d.status === "error") return show(d.msg);
+  const c = d.card;
+  const fin = note => { load(); seqNext(c, note); };
+  if (d.status === "nodex") return fin(`${c.name} hat kein Pokémon im Pokédex (Trainer/Energie) und liegt im Nebenstapel.`);
+  if (d.status === "same") return fin(`${c.name} ist schon im Binder. Das zusätzliche Exemplar liegt jetzt im Nebenstapel (insgesamt ${d.qty}×).`);
+  if (d.status === "placed") { sfx("catch"); return fin(`${d.dex_name}: ${c.name} (${c.rarity || "–"}, ${eur(c.price)}) ist jetzt im Binder${slotNote(c.dex_id)}.`); }
+  const f = (k, t, inB) => `<figure>${badge(k.lang, inB)}${cardImg(k)}<span>${t}: ${k.set_name} ${k.local_id} · ${k.rarity || "–"} · ${eur(k.price)}</span></figure>`;
+  show(`<b>${d.dex_name}</b> hat schon eine Karte im Binder. Welche soll dort liegen?
+    <div class="cmp">${f(d.current, "Aktuell", true)}${f(c, "Neu")}</div>
+    <div class="acts"><button id="rep">In den Binder (ersetzen)</button> <button class="alt" id="keep">In den Nebenstapel</button></div>`);
+  $("#rep").onclick = async () => { await post("/api/replace", {dex_id: d.dex_id, card_id: c.id}); fin("Karte ausgetauscht. Die alte liegt im Nebenstapel."); };
+  $("#keep").onclick = () => fin("Die neue Karte liegt im Nebenstapel, die aktuelle bleibt im Binder.");
+  load();
+}
+
+/* Auswahl für eine Karte: In den Binder / In den Nebenstapel (bei vorhandenem Pokémon mit Vergleich) */
+function renderChoice(c, target, o = {}) {
+  const fig = (k, t, inB) => `<figure>${badge(k.lang, inB)}${cardImg(k)}<span>${t}${k.set_name} ${k.local_id} · ${k.rarity || "–"}<br><b>${eur(k.price)}</b></span></figure>`;
+  const state = c.owned_qty ? (c.in_binder ? `Schon im Binder${c.owned_qty > 1 ? `, dazu ${c.owned_qty - 1}× im Nebenstapel` : ""}.` : `Schon in der Sammlung (${c.owned_qty}×), liegt im Nebenstapel.`) : (c.wished ? "Steht auf der Wunschliste." : "");
+  const b = (a, label, alt) => `<button${alt ? ' class="alt"' : ""} data-act="${a}">${label}</button>`;
+  let btns = "";
+  if (!c.in_binder) {
+    if (c.dex_id) btns += b("binder", c.binder_card ? "In den Binder (ersetzen)" : "In den Binder");
+    if (!c.owned_qty) btns += b("side", "In den Nebenstapel", !!c.dex_id);
+  }
+  if (c.owned_qty) btns += b("plus", "Noch ein Exemplar (+1)", true) + b("minus", "Ein Exemplar weniger (−1)", true);
+  if (!c.owned_qty) btns += c.wished ? b("unwish", "Von Wunschliste entfernen", true) : b("wish", "Auf die Wunschliste", true);
+  btns += o.seq ? b("skip", "Überspringen", true) + b("stop", "Beenden", true) : b("close", "Schließen", true);
+  target.innerHTML = `${o.head || ""}<div class="cmp">${c.binder_card ? fig(c.binder_card, "Aktuell im Binder: ", true) : ""}${fig(c, (c.dex_id ? `Nr. ${pad(c.dex_id)} ` : "") + (c.dex_name ? c.dex_name + " · " : "") + c.name + "<br>", c.in_binder)}</div>
+    ${dexBox(c.dex_name, c.dex_genus, c.dex_text, c.dex_game, c.dex_id)}${state ? `<p>${state}</p>` : ""}
+    ${c.owned_qty ? "" : `<div class="vrow"><label>Variante <select class="cvar" title="Bei Common/Uncommon: Reverse Holo oder Muster wählen, damit der Wert stimmt">${varOpts("normal")}</select></label></div>`}
+    <div class="acts">${btns}</div>`;
+  target.style.display = "block"; clearTimeout(hideT);
+  target.querySelectorAll("[data-act]").forEach(btn => btn.onclick = async () => {
+    const vs = target.querySelector(".cvar"), variant = vs && vs.value !== "normal" ? vs.value : "";
+    const a = btn.dataset.act, body = {set: c.set_id, number: c.local_id, lang: c.lang, variant};
+    let note = "", info = {};
+    if (a === "stop") return o.stop && o.stop();
+    if (a === "close") return o.close && o.close();
+    if (a === "binder") {
+      if (c.owned_qty) await post("/api/replace", {dex_id: c.dex_id, card_id: c.id});
+      else await post("/api/add", {...body, mode: "binder"});
+      sfx("catch");
+      note = `${c.dex_name}: ${c.name} (${c.rarity || "–"}, ${eur(c.price)}) liegt jetzt im Binder${slotNote(c.dex_id)}.`;
+    } else if (a === "side") {
+      await post("/api/add", {...body, mode: "side"});
+      note = `${c.name} liegt im Nebenstapel.`;
+    } else if (a === "plus") {
+      const r = await post("/api/qty", {card_id: c.id, delta: 1});
+      note = `${c.name}: jetzt ${r.qty}×.`;
+    } else if (a === "minus") {
+      const r = await post("/api/qty", {card_id: c.id, delta: -1});
+      if (r.last) {
+        if (!confirm(`Letztes Exemplar von "${c.name}" entfernen?`)) return;
+        await post("/api/delete", {card_id: c.id}); info.qty = 0; note = `${c.name} wurde entfernt.`;
+      } else { info.qty = r.qty; note = `${c.name}: jetzt ${r.qty}×.`; }
+    } else if (a === "wish") {
+      await post("/api/wish", {action: "add", card: c});
+      note = `${c.name} steht jetzt auf der Wunschliste.`;
+    } else if (a === "unwish") {
+      await post("/api/wish", {action: "remove", card_id: c.id});
+      note = `${c.name} ist nicht mehr auf der Wunschliste.`;
+    }
+    o.done && o.done(note, a, info);
+  });
+  const first = target.querySelector("[data-act]"); if (first) first.focus();
+}
+
+/* Set-Durchlauf: nach dem Hinzufügen die nächste Karte desselben Sets vorschlagen */
+const seqMode = () => $("#seqMode").value;      // off | set | dex, immer nur einer aktiv
+
+function seqNext(c, note) {
+  if (seqMode() === "set" && c && c.set_id) nextCard(c, note);
+  else if (seqMode() === "dex" && c && c.dex_id) { show(note); PD.lang = c.lang; openDex(c.dex_id, note); }
+  else show(note);
+}
+
+/* Pokédex-Durchlauf: nach dem Hinzufügen das nächste Pokémon mit allen seinen Karten anzeigen */
+const PD = {id: 0, lang: "de", note: ""};
+
+async function openBrowse(id, lang) {                // alle Karten eines Pokémon ansehen und hinzufügen (ohne Durchlauf)
+  PD.browse = true;
+  PD.lang = lang || ($("#lang").value === "auto" ? "de" : $("#lang").value);
+  $("#pmodal").style.display = "block"; $("#ptitle").textContent = "Lade …"; $("#pinfo").textContent = ""; $("#pbody").textContent = "";
+  let r;
+  try { r = await (await fetch(`/api/dexcards?dex_id=${id}&lang=${PD.lang}`)).json(); }
+  catch (e) { $("#pbody").textContent = "Kartenliste konnte nicht geladen werden."; return; }
+  if (r.status !== "ok") { $("#pbody").textContent = r.msg || "Kartenliste konnte nicht geladen werden."; return; }
+  renderDex(r, "");
+}
+
+async function openDex(afterId, note) {
+  PD.browse = false;
+  const p = new URLSearchParams({after: afterId, lang: PD.lang, skip: $("#dexSkip").checked ? "1" : ""});
+  let r;
+  try { r = await (await fetch("/api/nextdex?" + p)).json(); } catch (e) { return show("Nächstes Pokémon konnte nicht geladen werden."); }
+  if (r.status === "continue") return openDex(r.after, note);
+  if (r.status === "error") return show(r.msg);
+  if (r.status === "end") { $("#pmodal").style.display = "none"; return show(`${note ? note + " " : ""}Pokédex-Durchlauf beendet: Es gibt kein weiteres Pokémon.`); }
+  renderDex(r, note);
+}
+
+async function stayDex(note) {                      // dasselbe Pokémon neu zeigen (mit Markierungen), Scrollposition bleibt
+  const y = $("#pmodal").scrollTop;
+  let r;
+  try { r = await (await fetch(`/api/dexcards?dex_id=${PD.id}&lang=${PD.lang}`)).json(); } catch (e) { return; }
+  if (r.status === "ok") { renderDex(r, note, true); $("#pmodal").scrollTop = y; }
+}
+
+function renderDex(r, note, keep) {
+  PD.id = r.dex_id; PD.lang = r.lang; PD.cards = r.cards;
+  $("#pskip").style.display = PD.browse ? "none" : ""; $("#pstop").textContent = PD.browse ? "Schließen" : "Beenden";
+  $("#ptitle").textContent = `Nr. ${pad(r.dex_id)} ${r.name}`;
+  $("#plangs").innerHTML = [["de", "Deutsch"], ["en", "Englisch"], ["ja", "Japanisch"]]
+    .map(([k, l]) => `<button class="${PD.lang === k ? "" : "alt"}" data-l="${k}">${l}</button>`).join(" ");
+  const cur = r.binder_card ? `<div class="cmp"><figure>${badge(r.binder_card.lang, true)}${cardImg(r.binder_card)}<span>Aktuell im Binder: ${r.binder_card.set_name} ${r.binder_card.local_id} · ${r.binder_card.rarity || "–"}<br><b>${eur(r.binder_card.price)}</b></span></figure></div>` : "";
+  $("#pinfo").innerHTML = `${note ? `<p>${note}</p>` : ""}${r.skipped ? `<p><small>${r.skipped} Pokémon übersprungen (Binder-Karte oder keine Karten vorhanden)</small></p>` : ""}`
+    + dexBox(r.name, r.genus, r.text, r.game, r.dex_id) + cur
+    + `<p><small>${r.cards.length} Karten in dieser Sprache. Karte antippen, um sie in den Binder oder Nebenstapel zu legen.</small></p>`;
+  $("#pbody").innerHTML = r.cards.length ? `<div class="sgrid">${r.cards.map(c => `<div class="sc ${c.owned ? "own" : ""}" data-tid="${c.tid}">
+    ${badge(PD.lang, c.in_binder)}${c.owned && !c.in_binder ? '<span class="cnt">Nebenstapel</span>' : c.in_binder && c.owned > 1 ? `<span class="cnt">+${c.owned - 1} Nebenstapel</span>` : c.wished && !c.owned ? '<span class="cnt wsh">Wunschliste</span>' : ""}
+    ${c.image ? `<img loading="lazy" src="${c.image}" alt="${c.name}" data-lid="${c.local_id}" onerror="imgFail(this)">` : `<div class="noimg">${c.name}</div>`}
+    <b>${c.name}</b><br><small>${c.set_name} ${c.local_id}</small></div>`).join("")}</div>`
+    : "Keine Karten in dieser Sprache. Oben die Sprache wechseln.";
+  $("#pmodal").style.display = "block"; if (!keep) $("#pmodal").scrollTop = 0;
+}
+
+async function pickDexCard(tid) {
+  let r;
+  try { r = await (await fetch(`/api/cardinfo?lang=${PD.lang}&id=${encodeURIComponent(tid)}`)).json(); }
+  catch (e) { return alert("Karte konnte nicht geladen werden."); }
+  if (r.status !== "ok") return alert(r.msg || "Karte konnte nicht geladen werden.");
+  renderChoice(r.card, $("#cbody"), {
+    close: () => $("#cmodal").style.display = "none",
+    done: async (note, act) => {
+      $("#cmodal").style.display = "none"; load();
+      if (PD.browse || act === "wish" || act === "unwish" || act === "minus") return stayDex(note);   // Wunschliste bzw. Kartenliste per Klick: beim selben Pokémon bleiben, damit mehrere Karten gewählt werden können
+      openDex(PD.id, note);                                          // sonst weiter mit dem nächsten Pokémon
+    },
+  });
+  $("#cmodal").style.display = "block";
+}
+
+$("#pskip").onclick = () => openDex(PD.id, "");
+$("#pstop").onclick = () => { $("#pmodal").style.display = "none"; if (PD.browse) load(); else show("Pokédex-Durchlauf beendet."); };
+$("#plangs").onclick = async e => {
+  const b = e.target.closest("button"); if (!b) return;
+  PD.lang = b.dataset.l;
+  const r = await (await fetch(`/api/dexcards?dex_id=${PD.id}&lang=${PD.lang}`)).json();
+  if (r.status === "ok") renderDex(r, "");
+};
+$("#pbody").onclick = e => { const c = e.target.closest(".sc"); if (c) pickDexCard(c.dataset.tid); };
+$("#pdGo").onclick = () => { PD.lang = $("#lang").value === "auto" ? "de" : $("#lang").value; openDex(Math.max(0, (+$("#pdStart").value || 1) - 1), ""); };
+
+function applyMode() {                           // nur die Optionen des aktiven Modus zeigen
+  $("#seqSkipL").style.display = seqMode() === "set" ? "" : "none";
+  $("#dexSkipL").style.display = $("#dexStartL").style.display = seqMode() === "dex" ? "" : "none";
+}
+
+async function nextCard(c, note) {
+  const p = new URLSearchParams({set: c.set_id, lang: c.lang, after: c.local_id, skip: $("#seqSkip").checked ? "1" : ""});
+  const head = note ? `<p>${note}</p>` : "";
+  let r;
+  try { r = await (await fetch("/api/next?" + p)).json(); } catch (e) { return show(`${head}Nächste Karte konnte nicht geladen werden.`); }
+  if (r.status === "error") return show(`${head}${r.msg}`);
+  if (r.status === "end") return show(`${head}Das war die letzte Karte im Set <b>${c.set_name}</b>.`);
+  const n = r.card;
+  const showSeq = hd => renderChoice(n, $("#msg"), {
+    seq: true,
+    head: `${hd}<b>Nächste Karte in ${n.set_name}</b>${r.skipped ? ` <small>(${r.skipped} Trainer/Energie übersprungen)</small>` : ""}`,
+    done: (note2, act, info) => {
+      load();
+      if (act === "wish" || act === "unwish") { n.wished = act === "wish"; return showSeq(note2 ? `<p>${note2}</p>` : ""); }   // Wunschliste: bei dieser Karte bleiben
+      if (act === "minus") { n.owned_qty = info.qty; if (!info.qty) n.in_binder = false; return showSeq(note2 ? `<p>${note2}</p>` : ""); }   // -1: bei dieser Karte bleiben
+      nextCard(n, note2);                                                                                                      // sonst weiter zur nächsten Karte
+    },
+    stop: () => show("Set-Durchlauf beendet."),
+  });
+  showSeq(head);
+}
+
+/* Automatische Erkennung von Set und Sprache über Nummer + Nenner (+ Kartentext) */
+function guessLang(t) {
+  const de = (t.match(/schw[aä]che|resistenz|r[uü]ckzug|entwickelt sich|unterst[uü]tzer|stadion|\bKP\b|phase [12]|basis/gi) || []).length;
+  const en = (t.match(/weakness|resistance|retreat|evolves from|supporter|stadium|\bHP\b|stage [12]|basic/gi) || []).length;
+  return de > en ? "de" : en > de ? "en" : "";
+}
+
+async function detect(num, den, text, useSet) {
+  const p = new URLSearchParams({num, den: den || "", set: useSet ? setId() : "", lang: $("#lang").value, pref: guessLang(text || "")});
+  const res = await (await fetch("/api/detect?" + p)).json();
+  if (!res.length) return show(`Keine Karte zu ${num}${den ? "/" + den : ""} gefunden. Set oder Sprache manuell wählen.`);
+  showCandidates(res);
+}
+function showCandidates(res) {                        // Trefferliste mit "Hinzufügen" (von Texterkennung und KI genutzt)
+  show(`${res.length > 1 ? "Mehrere Treffer, welche Karte ist es?" : "Das ist die Karte:"}
+    <div class="cmp">${res.map((c, i) => `<figure>${badge(c.lang, c.in_binder)}${cardImg(c)}
+      <span>${c.in_binder ? "<b>Schon im Binder</b><br>" : ""}${c.dex_name ? c.dex_name + " · " : ""}${c.name}<br>${c.set_name} ${c.local_id} · ${c.rarity || "–"}<br><b>${eur(c.price)}</b></span>
+      <button data-i="${i}">Hinzufügen</button></figure>`).join("")}</div>
+    <button class="alt" id="no">Verwerfen</button>`);
+  document.querySelectorAll("#msg [data-i]").forEach(b => b.onclick = () => { const c = res[b.dataset.i]; add(c.set_id, c.local_id, c.lang); });
+  $("#no").onclick = () => show("Verworfen.");
+  const first = $("#msg [data-i]"); if (first) first.focus();
+}
+
+function addManual() {
+  const set = setId(), lang = $("#lang").value, raw = $("#num").value.trim();
+  if (!raw) return show("Bitte Kartennummer angeben, am besten mit Nenner (z. B. 147/196).");
+  const [num, den] = raw.split("/").map(x => x.trim());
+  if (set && lang !== "auto") add(set, num, lang);
+  else if (set || den) detect(num, den, "", !!set);
+  else show("Bitte ein Set wählen oder die Nummer mit Nenner eingeben (z. B. 147/196).");
+  $("#num").value = ""; $("#num").focus();
+}
+
+/* Nebenstapel und Karten pro Pokémon */
+let MC = [], MF = "all", MS = "std";
+const catOf = c => c.category || (c.dex_id ? "Pokemon" : "?");
+const CATS = [["all", "Alle"], ["Pokemon", "Pokémon"], ["Trainer", "Trainer"], ["Energy", "Energie"]];
+
+function renderModal() {
+  const side = $("#modal").dataset.url.includes("side=1");
+  $("#mfilter").style.display = side ? "flex" : "none";
+  if (side) $("#mfilter").innerHTML = CATS.map(([k, l]) =>
+    `<button class="${MF === k ? "" : "alt"}" data-f="${k}">${l} (${k === "all" ? MC.length : MC.filter(c => catOf(c) === k).length})</button>`).join("");
+  let list = side && MF !== "all" ? MC.filter(c => catOf(c) === MF) : MC;
+  if (MS !== "std") list = [...list].sort((a, b) => ((a.price == null) - (b.price == null)) || (MS === "pdesc" ? (b.price || 0) - (a.price || 0) : (a.price || 0) - (b.price || 0)));
+  $("#msort").value = MS;
+  $("#mexport").style.display = side ? "flex" : "none";
+  if (side) $("#msum").textContent = `Wert (Auswahl): ${eur(list.reduce((a, c) => a + (c.price || 0) * c.spare, 0))} · ${list.reduce((a, c) => a + c.spare, 0)} Karten`;
+  $("#mgrid").innerHTML = list.length ? list.map(c => `<div class="mc">${badge(c.lang, c.in_binder)}
+    ${cardImg(c)}
+    ${c.dex_name ? c.dex_name + " · " : ""}${c.set_name} ${c.local_id}
+    ${side && c.listed ? `<span class="cnt cmtag">${c.listed}× auf Cardmarket</span>` : ""}<small>${c.rarity || "–"}${c.in_binder ? (side ? " · Doppelte der Binder-Karte" : c.qty > 1 ? ` · im Binder, +${c.qty - 1} im Nebenstapel` : " · im Binder") : ""}</small><span class="price">${eur(c.price)}</span>${chg(c)}
+    <div class="qtyc"><button class="alt" data-qm="-1" data-id="${c.id}" aria-label="Ein Exemplar weniger">−</button><span class="qn">${side ? c.spare : c.qty}×</span><button data-qm="1" data-id="${c.id}" aria-label="Ein Exemplar mehr">+</button></div>
+    <div class="vrow"><select class="vsel" data-id="${c.id}" title="Variante der Karte">${varOpts(c.variant)}</select><select class="csel" data-id="${c.id}" title="Zustand der Karte (Cardmarket)">${condOpts(c.cond)}</select>
+      <input class="pown" data-id="${c.id}" value="${c.price_own ?? ""}" placeholder="Eigener Preis" inputmode="decimal" title="Eigener Preis in Euro (überschreibt den Cardmarket-Preis)"></div>
+    ${srcNote(c) ? `<span class="vnote">${srcNote(c)}</span>` : ""}
+    <div class="acts">
+      ${!c.in_binder && c.dex_id ? `<button data-a="use" data-id="${c.id}" data-dex="${c.dex_id}">In den Binder</button>` : ""}
+      <button class="alt" data-grade="${c.id}" title="Wie könnte die Karte bei PSA abschneiden?">Grading</button>
+      ${side && c.in_binder ? "" : `<button class="alt" data-a="del" data-id="${c.id}">Löschen</button>`}
+    </div></div>`).join("") : "Keine Karten.";
+}
+
+async function openCards(title, url) {
+  MC = await (await fetch(url)).json();
+  $("#mtitle").textContent = title;
+  const m = $("#modal"); m.style.display = "block"; m.dataset.title = title; m.dataset.url = url;
+  const mm = url.match(/dex_id=(\d+)/);
+  $("#mdex").innerHTML = "";
+  if (mm) {                                    // Pokédex-Eintrag wie im Spiel
+    try {
+      const i = await (await fetch(`/api/dexinfo?id=${mm[1]}`)).json();
+      $("#mdex").innerHTML = `<div class="dexbox"><span class="favi ${i.fav ? "on" : ""}" id="mfav" data-fav="${i.id}" title="Favorit">${starSvg(!!i.fav)}</span>`
+        + `<b>Nr. ${pad(i.id)} · ${i.name}${i.genus ? " · " + i.genus : ""}</b>${i.text ? `<p>${i.text}</p><small>Pokédex-Eintrag · Pokémon ${i.game}</small>` : "<p><small>Kein Pokédex-Eintrag vorhanden.</small></p>"}<div class="acts"><button class="alt" data-allcards="${i.id}">Alle Karten dieses Pokémon</button></div></div>`;
+    } catch (e) {}
+  }
+  renderModal();
+}
+
+$("#grid").onclick = e => {
+  const fv = e.target.closest(".fav");
+  if (fv) return toggleFav(+fv.dataset.fav);
+  const t = e.target.closest(".t");
+  if (!t) return;
+  if (+t.dataset.n) openCards(`Nr. ${pad(t.dataset.id)} ${t.dataset.name} · ${slotTxt(t.dataset.id)}`, `/api/cards?dex_id=${t.dataset.id}`);
+  else openBrowse(+t.dataset.id);                                 // Silhouette: alle Karten dieses Pokémon zum Hinzufügen
+};
+$("#mdex").onclick = e => {
+  const f = e.target.closest(".favi"); if (f) return toggleFav(+f.dataset.fav);
+  const a = e.target.closest("[data-allcards]"); if (a) openBrowse(+a.dataset.allcards);   // alle Karten dieses Pokémon (auch die, die du noch nicht hast)
+};
+$("#msort").onchange = e => { MS = e.target.value; renderModal(); };
+$("#sort").onchange = render;
+$("#gen").onchange = render;
+$("#side").onclick = () => { MF = "all"; openCards("Nebenstapel", "/api/cards?side=1"); };
+$("#mfilter").onclick = e => { const b = e.target.closest("button"); if (b) { MF = b.dataset.f; renderModal(); } };
+$("#mclose").onclick = () => $("#modal").style.display = "none";
+$("#mgrid").onclick = async e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.grade) return openGrade(MC.find(c => c.id === b.dataset.grade));
+  if (b.dataset.qm) {                               // +1 / -1
+    const r = await post("/api/qty", {card_id: b.dataset.id, delta: +b.dataset.qm});
+    if (r.last) { if (!confirm("Letztes Exemplar entfernen?")) return; await post("/api/delete", {card_id: b.dataset.id}); }
+    const m0 = $("#modal"); await openCards(m0.dataset.title, m0.dataset.url); load(); return;
+  }
+  if (b.dataset.a === "use") await post("/api/replace", {dex_id: b.dataset.dex, card_id: b.dataset.id});
+  if (b.dataset.a === "del") { if (!confirm("Karte wirklich löschen?")) return; await post("/api/delete", {card_id: b.dataset.id}); }
+  const m = $("#modal"); openCards(m.dataset.title, m.dataset.url); load();
+};
+$("#mgrid").onchange = async e => {
+  const el = e.target.closest(".vsel, .pown, .csel"); if (!el) return;
+  const card = el.closest(".mc");
+  const v = card.querySelector(".vsel").value, own = card.querySelector(".pown").value.trim(), cond = card.querySelector(".csel").value;
+  const r = await post("/api/variant", {card_id: el.dataset.id, variant: v === "normal" ? "" : v, price_own: own, cond: cond === "NM" ? "" : cond});
+  if (r.ok === false) return alert(r.msg || "Konnte nicht gespeichert werden.");
+  const m = $("#modal"); await openCards(m.dataset.title, m.dataset.url); load();
+};
+$("#mxlsx").onclick = e => download(`/api/export-side.xlsx?spare=${$("#mspare").checked ? 1 : 0}`, e.target);
+$("#mpage").onclick = () => window.open(`/verkauf?spare=${$("#mspare").checked ? 1 : 0}`, "_blank");
+$("#mcsv").onclick = () => { location.href = `/api/export-side.csv?details=${$("#mdet").checked ? 1 : 0}&spare=${$("#mspare").checked ? 1 : 0}`; };
+$("#prices").onclick = async () => { await post("/api/prices/refresh", {}); load(); };
+
+/* Sets-Ansicht (Sets ab 2017 mit Kartenliste) */
+const SL = {lang: "de", set: null, cards: [], map: {}};
+
+function logoFail(el) {                 // Logo fehlt: Set-Symbol versuchen, sonst Bild entfernen
+  if (el.dataset.sym && !el.dataset.tried) { el.dataset.tried = 1; el.src = el.dataset.sym + ".png"; } else el.remove();
+}
+
+async function openSets(lang) {
+  if (lang) SL.lang = lang;
+  SL.set = null;
+  $("#smodal").style.display = "block";
+  $("#sback").style.display = "none"; $("#stools").style.display = "none"; $("#slangs").style.display = "inline";
+  $("#stitle").textContent = "Sets";
+  $("#slangs").innerHTML = [["de", "Deutsch"], ["en", "Englisch"], ["ja", "Japanisch"]]
+    .map(([k, l]) => `<button class="${SL.lang === k ? "" : "alt"}" data-l="${k}">${l}</button>`).join(" ");
+  $("#sbody").textContent = "Lade Sets …";
+  let data;
+  try { data = await (await fetch(`/api/setlist?lang=${SL.lang}`)).json(); }
+  catch (e) { $("#sbody").textContent = "Sets konnten nicht geladen werden (Internetverbindung des Servers prüfen)."; return; }
+  SL.map = Object.fromEntries(data.flatMap(s => s.sets).map(x => [x.id, x]));
+  const ja = SL.lang === "ja", all = data.flatMap(s => s.sets), named = all.filter(x => x.name_en).length;
+  const note = ja ? `<p><small>Englische Namen (TCGplayer) für ${named} von ${all.length} Sets gefunden. Übrige zeigen den japanischen Namen mit Set-Code.</small></p>` : "";
+  $("#sbody").innerHTML = note + (data.length ? data.map(s => `<h3 class="ser">${s.name}</h3><div class="setgrid">${s.sets.map(x =>
+    `<div class="setcard" data-id="${x.id}">${x.logo || x.symbol ? `<img src="${x.logo || x.symbol}.png" data-sym="${x.symbol || ""}" alt="" loading="lazy" onerror="logoFail(this)">` : ""}<b>${x.name_en || x.name}</b>
+     ${ja ? `<small>${x.id}${x.name_en ? " · " + x.name : ""}</small>` : ""}<small>${x.total || x.official || "?"} Karten · ${x.owned} im Besitz</small></div>`).join("")}</div>`).join("") : "Keine Sets gefunden.");
+}
+
+async function openSet(id) {
+  SL.set = id;
+  const info = SL.map[id] || {name: id};
+  $("#sback").style.display = "inline-block"; $("#slangs").style.display = "none"; $("#stools").style.display = "flex";
+  $("#stitle").textContent = info.name_en || info.name; $("#sbody").textContent = "Lade Karten …";
+  let r;
+  try { r = await (await fetch(`/api/setcards?lang=${SL.lang}&set=${encodeURIComponent(id)}`)).json(); }
+  catch (e) { $("#sbody").textContent = "Karten konnten nicht geladen werden."; return; }
+  if (r.status !== "ok") { $("#sbody").textContent = r.msg || "Karten konnten nicht geladen werden."; return; }
+  SL.cards = r.cards; FBMAP = r.fb || {}; $("#stitle").textContent = `${info.name_en || r.name_en || r.name || info.name} (${r.cards.length} Karten)`;
+  renderSet();
+}
+
+const scTile = c => `<div class="sc sct ${c.owned ? "own" : ""}" data-tid="${c.tid}">
+    ${badge(SL.lang, c.in_binder)}${c.owned && !c.in_binder ? '<span class="cnt">Nebenstapel</span>' : c.in_binder && c.owned > 1 ? `<span class="cnt">+${c.owned - 1} Nebenstapel</span>` : c.wished && !c.owned ? '<span class="cnt wsh">Wunschliste</span>' : ""}
+    ${c.image ? `<img loading="lazy" src="${c.image}" alt="${c.name}" data-lid="${c.local_id}" onerror="imgFail(this)">` : `<div class="noimg">${c.name}</div>`}
+    <div class="scn"><b>${c.local_id}</b> ${c.name}</div>
+    ${c.dex_id ? `<small class="dxl">Nr. ${pad(c.dex_id)} · ${c.dex_name}</small>` : ""}
+    <div class="qtyc"><button class="alt" data-q="-" data-tid="${c.tid}" ${c.owned ? "" : "disabled"} aria-label="Ein Exemplar weniger">−</button><span class="qn">${c.owned || 0}×</span><button data-q="+" data-tid="${c.tid}" aria-label="Ein Exemplar mehr">+</button></div></div>`;
+
+function renderSet() {
+  const f = $("#sfilter").value, s = $("#ssearch").value.toLowerCase();
+  const list = SL.cards.filter(c => (f === "all" || (f === "own") === (c.owned > 0)) &&
+    (!s || c.name.toLowerCase().includes(s) || String(c.local_id).toLowerCase().includes(s) || (c.dex_name || "").toLowerCase().includes(s) || (c.dex_id && pad(c.dex_id).includes(s))));
+  $("#sbody").innerHTML = list.length ? `<div class="sgrid">${list.map(scTile).join("")}</div>` : "Keine Karten.";
+}
+
+function updateTile(tid) {                          // nur diese Kachel neu zeichnen (schnell, Scrollposition bleibt)
+  const c = SL.cards.find(x => x.tid === tid), el = [...$("#sbody").querySelectorAll(".sc")].find(x => x.dataset.tid === tid);
+  if (c && el) el.outerHTML = scTile(c);
+}
+
+async function quick(act, tid) {
+  sfx("plus");                    // +1 / -1 direkt an der Kachel (z. B. beim Eintragen eines ganzen Displays)
+  const c = SL.cards.find(x => x.tid === tid); if (!c) return;
+  const cid = SL.lang === "de" ? tid : `${SL.lang}:${tid}`;
+  if (act === "+") {
+    if (c.owned) { const r = await post("/api/qty", {card_id: cid, delta: 1}); if (r.ok) c.owned = r.qty; }
+    else {                                         // neue Karte: Binder, wenn der Platz frei ist, sonst Nebenstapel (ohne Rückfrage)
+      const r = await post("/api/add", {set: SL.set, number: c.local_id, lang: SL.lang, mode: "quick"});
+      if (r.status === "notfound" || r.status === "error") return alert(r.msg || "Karte nicht gefunden.");
+      c.owned = 1; c.wished = false; c.in_binder = r.status === "placed";
+      updateTile(tid); load(); return refreshSet();
+    }
+  } else {
+    if (!c.owned) return;
+    const r = await post("/api/qty", {card_id: cid, delta: -1});
+    if (r.last) {
+      if (!confirm(`Letztes Exemplar von "${c.name}" entfernen?`)) return;
+      await post("/api/delete", {card_id: cid}); load(); return refreshSet();
+    }
+    if (r.ok) c.owned = r.qty;
+  }
+  updateTile(tid); load();
+}
+
+async function refreshSet() {          // Markierungen neu laden, Scrollposition bleibt
+  const y = $("#smodal").scrollTop;
+  const r = await (await fetch(`/api/setcards?lang=${SL.lang}&set=${encodeURIComponent(SL.set)}`)).json();
+  if (r.status === "ok") { SL.cards = r.cards; renderSet(); $("#smodal").scrollTop = y; }
+}
+
+async function pickCard(tid) {
+  let r;
+  try { r = await (await fetch(`/api/cardinfo?lang=${SL.lang}&id=${encodeURIComponent(tid)}`)).json(); }
+  catch (e) { return alert("Karte konnte nicht geladen werden."); }
+  if (r.status !== "ok") return alert(r.msg || "Karte konnte nicht geladen werden.");
+  const info = SL.map[SL.set] || {};
+  renderChoice(r.card, $("#cbody"), {
+    head: `<p><b>${info.name_en || info.name || ""}</b></p>`,
+    close: () => $("#cmodal").style.display = "none",
+    done: async () => { $("#cmodal").style.display = "none"; load(); await refreshSet(); },
+  });
+  $("#cmodal").style.display = "block";
+}
+
+$("#setsBtn").onclick = () => openSets();
+$("#sclose").onclick = () => $("#smodal").style.display = "none";
+$("#sback").onclick = () => openSets();
+$("#slangs").onclick = e => { const b = e.target.closest("button"); if (b) openSets(b.dataset.l); };
+$("#sbody").onclick = e => {
+  const qb = e.target.closest("[data-q]"); if (qb) return qb.disabled ? null : quick(qb.dataset.q, qb.dataset.tid);
+  const s = e.target.closest(".setcard"); if (s) return openSet(s.dataset.id);
+  const c = e.target.closest(".sc"); if (c) pickCard(c.dataset.tid);
+};
+$("#sfilter").onchange = renderSet;
+$("#ssearch").oninput = renderSet;
+document.addEventListener("keydown", e => {
+  if (e.key !== "Escape") return;
+  if ($("#lb").style.display === "flex") { $("#lb").style.display = "none"; return; }
+  for (const id of ["#vmodal", "#gmodal", "#cmodal", "#aimodal", "#sumodal", "#pmodal", "#tmodal", "#stmodal", "#bmodal", "#qmodal", "#smodal", "#modal"]) if ($(id).style.display === "block") { $(id).style.display = "none"; break; }
+});
+try {                                           // Modus aus der alten Einstellung übernehmen (seqOn), Standard: Nächste Karte im Set
+  const m = localStorage.getItem("seqMode"), old = localStorage.getItem("seqOn");
+  $("#seqMode").value = m || (old === "0" ? "off" : "set");
+} catch (e) { $("#seqMode").value = "set"; }
+$("#seqMode").onchange = () => { try { localStorage.setItem("seqMode", seqMode()); } catch (e) {} applyMode(); };
+for (const id of ["seqSkip", "dexSkip"]) {
+  try { const v = localStorage.getItem(id); if (v !== null) $("#" + id).checked = v === "1"; } catch (e) {}
+  $("#" + id).onchange = e => { try { localStorage.setItem(id, e.target.checked ? "1" : "0"); } catch (err) {} };
+}
+applyMode();
+
+/* ---------- Zustand, Preisbewegung, Töne, Hinweise, Designs ---------- */
+let FROM_SCAN = false;
+const CONDS = [["NM", "Near Mint"], ["MT", "Mint"], ["EX", "Excellent"], ["GD", "Good"], ["LP", "Light Played"], ["PL", "Played"], ["PO", "Poor"]];
+const condOpts = v => CONDS.map(([k, l]) => `<option value="${k}" title="${l}"${(v || "NM") === k ? " selected" : ""}>${k}</option>`).join("");
+const TRI = up => `<svg class="tri" viewBox="0 0 10 10" width="10" height="10" aria-hidden="true"><path d="${up ? "M5 1l4 8H1z" : "M5 9L1 1h8z"}" fill="currentColor"/></svg>`;
+const chg = c => {                                    // Preisbewegung seit der letzten Aktualisierung (nur beim Normalpreis)
+  if (c.price_old == null || c.price == null || (c.price_src && c.price_src !== "normal")) return "";
+  const d = c.price - c.price_old;
+  return Math.abs(d) < 0.005 ? "" : ` <span class="chg ${d > 0 ? "good" : "bad"}" title="vorher ${eur(c.price_old)}">${TRI(d > 0)}${eur(Math.abs(d))}</span>`;
+};
+const SOUNDS = {scan: [[880, .07]], plus: [[660, .05]], catch: [[523, .09], [659, .09], [784, .09], [1047, .22]],
+  ach: [[523, .1], [659, .1], [784, .1], [659, .1], [784, .1], [1047, .1], [1319, .35]]};
+let AC = null;
+function sfx(kind) {                                  // kleine Retro-Töne (Menü: "Töne")
+  if (!$("#snd").checked) return;
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    let t = AC.currentTime;
+    for (const [f, d] of SOUNDS[kind] || []) {
+      const o = AC.createOscillator(), g = AC.createGain();
+      o.type = "square"; o.frequency.value = f; g.gain.setValueAtTime(.05, t); g.gain.exponentialRampToValueAtTime(.0001, t + d);
+      o.connect(g); g.connect(AC.destination); o.start(t); o.stop(t + d); t += d;
+    }
+  } catch (e) {}
+}
+function toast(title, text) {
+  const t = document.createElement("div"); t.className = "toast"; t.innerHTML = `<b>${title}</b>${text}`;
+  $("#toasts").appendChild(t); setTimeout(() => t.remove(), 6500);
+}
+function applyTheme(t) {
+  document.documentElement.dataset.theme = t || "rot";
+  const m = document.querySelector('meta[name="theme-color"]');
+  if (m) m.content = getComputedStyle(document.documentElement).getPropertyValue("--red").trim() || "#d62d2d";
+}
+async function download(url, btn) {                   // Datei laden mit Rückmeldung (Excel braucht ein paar Sekunden)
+  const old = btn.textContent; btn.textContent = "Erstelle …"; btn.disabled = true;
+  try {
+    const r = await fetch(url);
+    if (!r.ok) { let m = "Export fehlgeschlagen."; try { m = (await r.json()).msg || m; } catch (e) {} return alert(m); }
+    const blob = await r.blob(), name = ((r.headers.get("Content-Disposition") || "").match(/filename=([^;]+)/) || [])[1] || "export";
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  } catch (e) { alert("Export fehlgeschlagen: " + e.message); } finally { btn.textContent = old; btn.disabled = false; }
+}
+
+/* ---------- Pack-Session (z. B. ein ganzes Display eintragen) ---------- */
+let SESS = null;
+function renderSessChip(s) {
+  SESS = s; const on = !!(s && s.active);
+  $("#sessChip").style.display = on ? "block" : "none";
+  if (on) $("#sessChip").textContent = `● Pack-Session: ${s.cards} Karten · ${eur(s.value)}`;
+  $("#sessBtn").textContent = on ? "Pack-Session beenden" : "Pack-Session starten";
+}
+function showSummary(s, live) {
+  const avg = s.cards > 0 ? s.value / s.cards : 0;
+  $("#sutitle").textContent = live ? "Pack-Session läuft" : "Pack-Auswertung";
+  $("#subody").innerHTML = `<p>${s.cards >= 36 ? "Ein ganzes Display!" : s.cards >= 10 ? "Ordentliche Runde." : "Kleine Runde."} Start: ${s.started || "–"}</p>
+    <div class="sumgrid">
+      <div class="sum"><b>${s.cards}</b><small>Karten hinzugefügt</small></div>
+      <div class="sum"><b>${eur(s.value)}</b><small>Gesamtwert, Ø ${eur(avg)} pro Karte</small></div>
+      <div class="sum"><b>${s.new_cards}</b><small>neue Karten in der Sammlung</small></div>
+      <div class="sum"><b>${s.new_pokemon}</b><small>neue Pokémon im Pokédex</small></div></div>
+    <h3 class="ser">Die besten Karten</h3>
+    <div class="topg">${s.top.map(c => `<div class="mc">${cardImg(c)}<b>${c.name}</b><small>${c.set_name}${c.qty > 1 ? " · " + c.qty + "×" : ""}</small><span class="price">${eur(c.price)}</span></div>`).join("") || "<p>Noch nichts.</p>"}</div>
+    <h3 class="ser">Nach Sets</h3>
+    ${s.sets.map(t => `<div class="grow"><span class="gl">${t.set_name}</span><span class="gn" style="width:auto">${t.cards}× · ${eur(t.value)}</span></div>`).join("") || "<p>–</p>"}
+    <div class="acts">${live ? '<button id="suend">Session beenden</button>' : ""}<button class="alt" id="suclose">Schließen</button></div>`;
+  $("#sumodal").style.display = "block";
+  $("#suclose").onclick = () => $("#sumodal").style.display = "none";
+  if (live) $("#suend").onclick = async () => { const r = await post("/api/session", {action: "stop"}); sfx("ach"); load(); showSummary(r, false); };
+}
+
+/* ---------- Binder-Ansicht (wie ein echter Binder, Seite für Seite) ---------- */
+const bsize = () => +$("#bsize").value || 9;
+const bcols = n => n === 9 ? 3 : 4;
+const slotOf = id => ({page: Math.floor((id - 1) / bsize()) + 1, slot: (id - 1) % bsize() + 1});
+const slotTxt = id => { const q = slotOf(+id); return `Seite ${q.page}, Platz ${q.slot}`; };
+const slotNote = id => id ? ` (${slotTxt(id)})` : "";
+let BP = 1;
+function openBinder(page) {
+  const n = bsize(), total = Math.max(rows.length, 1), pages = Math.ceil(total / n);
+  BP = Math.min(Math.max(1, page || BP), pages);
+  const from = (BP - 1) * n + 1, slots = rows.filter(x => x.id >= from && x.id < from + n), filled = slots.filter(x => x.cid).length;
+  $("#bmodal").style.display = "block";
+  $("#btitle").textContent = `Binder · Seite ${BP} von ${pages}`;
+  $("#bbody").innerHTML = `<div class="bnav"><button class="alt" data-bp="${BP - 1}" ${BP <= 1 ? "disabled" : ""}>‹ Zurück</button>
+      <span>${filled} von ${slots.length} Fächern gefüllt</span>
+      <button class="alt" data-bp="${BP + 1}" ${BP >= pages ? "disabled" : ""}>Weiter ›</button>
+      <label>Seite <input id="bpage" type="number" min="1" max="${pages}" value="${BP}" style="width:72px"></label>
+      <label>Pokémon Nr. <input id="bnr" type="number" min="1" max="${total}" style="width:84px"></label><button id="bgo" class="alt">Springen</button></div>
+    <div class="bpage" style="--cols:${bcols(n)}">${slots.map(x => `<div class="bslot ${x.cid ? "own" : "miss"}" data-id="${x.id}" data-n="${x.n}" data-name="${x.name}">
+        <span class="bn">Platz ${(x.id - 1) % n + 1}</span>${x.cid ? badge(x.lang, true) : ""}
+        <img loading="lazy" src="${x.image || art(x.id)}" alt="${x.name}" data-dex="${x.id}" onerror="imgFail(this)">
+        <div class="bt"><b>Nr. ${pad(x.id)}</b> ${x.name}</div></div>`).join("")}</div>`;
+}
+
+/* ---------- Pokédex-Quiz ---------- */
+const QZ = {streak: 0, best: 0, score: 0, cur: null, gen: "all"};
+try { QZ.best = +localStorage.getItem("quizBest") || 0; } catch (e) {}
+function openQuiz() { $("#qmodal").style.display = "block"; quizNext(); }
+async function quizNext() {
+  const pool = rows.filter(x => x.name && inGen(x, QZ.gen));
+  if (pool.length < 4) { $("#qbody").textContent = "Es sind noch nicht genug Pokémon geladen."; return; }
+  const pick = a => a[Math.floor(Math.random() * a.length)], ans = pick(pool), ids = new Set([ans.id]);
+  while (ids.size < 4) ids.add(pick(pool).id);
+  QZ.cur = {ans, opts: [...ids].map(id => rows.find(r => r.id === id)).sort(() => Math.random() - .5), done: false};
+  quizRender();
+  try {
+    const i = await (await fetch(`/api/dexinfo?id=${ans.id}`)).json();
+    if (QZ.cur && QZ.cur.ans.id === ans.id) { Object.assign(QZ.cur, {genus: i.genus || "", text: i.text || "", game: i.game || ""}); quizRender(); }
+  } catch (e) {}
+}
+function quizRender() {
+  const c = QZ.cur; if (!c) return;
+  $("#qbody").innerHTML = `<div class="qtop"><span>Serie: <b>${QZ.streak}</b></span><span>Punkte: <b>${QZ.score}</b></span><span>Rekord: <b>${QZ.best}</b></span>
+      <select id="qgen"><option value="all">Alle Generationen</option>${GENS.map((g, i) => `<option value="${i + 1}"${QZ.gen == i + 1 ? " selected" : ""}>Gen ${g[0]} · ${g[1]}</option>`).join("")}</select></div>
+    <div class="qstage"><img class="qimg ${c.done ? "rev" : ""}" src="${art(c.ans.id)}" alt="${c.done ? c.ans.name : "Gesuchtes Pokémon"}"></div>
+    <h3 class="ser">${c.done ? (c.right ? "Richtig!" : "Leider falsch") : "Wer ist das Pokémon?"}</h3>
+    ${!c.done && c.genus ? `<p><small>Tipp: ${c.genus}</small></p>` : ""}
+    <div class="qopts">${c.opts.map(o => `<button class="qopt ${c.done && o.id === c.ans.id ? "ok" : c.done && c.picked === o.id ? "bad" : "alt"}" data-id="${o.id}" ${c.done ? "disabled" : ""}>${o.name}</button>`).join("")}</div>
+    ${c.done ? `${dexBox(c.ans.name, c.genus, c.text, c.game, c.ans.id)}<div class="acts"><button id="qnext">Nächste Frage</button></div>` : ""}`;
+}
+function quizAnswer(id) {
+  const c = QZ.cur; c.done = true; c.picked = id; c.right = id === c.ans.id;
+  if (c.right) { QZ.streak++; QZ.score += 10 + Math.min(QZ.streak, 10); sfx("catch"); } else QZ.streak = 0;
+  if (QZ.streak > QZ.best) { QZ.best = QZ.streak; try { localStorage.setItem("quizBest", QZ.best); } catch (e) {} }
+  quizRender();
+}
+
+/* ---------- Grading-Check (Vorab-Einschätzung nach PSA-Maßstab) ---------- */
+const G = {card: null, sides: {front: null, back: null}, est: null, ai: null, cen: null, subs: {}, ev: {}, msg: "", busy: false, view: "wizard", drag: null};
+const GKEYS = ["front", "back"];
+const GLINES = [["ox0", "x", "o"], ["ox1", "x", "o"], ["oy0", "y", "o"], ["oy1", "y", "o"], ["ix0", "x", "i"], ["ix1", "x", "i"], ["iy0", "y", "i"], ["iy1", "y", "i"]];
+const FRONT_CAPS = [[55, 10], [60, 9], [65, 8], [70, 7], [80, 6], [85, 5], [90, 3]], BACK_CAPS = [[75, 10], [90, 9]];
+const capOf = (w, t, floor) => { for (const [lim, g] of t) if (w <= lim) return g; return floor; };
+const gcolor = g => g >= 9 ? "var(--green)" : g >= 7 ? "var(--yel)" : "#ff7a7a";
+const guidesDefault = () => ({ox0: .05, ox1: .95, oy0: .04, oy1: .96, ix0: .11, ix1: .89, iy0: .09, iy1: .91});
+
+function centeringOf(g) {                             // Randbreiten und Verhältnisse aus den Linien
+  const l = g.ix0 - g.ox0, r = g.ox1 - g.ix1, t = g.iy0 - g.oy0, b = g.oy1 - g.iy1, pct = (a, c) => a + c > 0 ? Math.max(a, c) / (a + c) * 100 : 50;
+  return {l, r, t, b, lr: pct(l, r), tb: pct(t, b), worst: Math.max(pct(l, r), pct(t, b))};
+}
+const ratioTxt = (a, b) => a + b > 0 ? `${Math.round(a / (a + b) * 100)}/${100 - Math.round(a / (a + b) * 100)}` : "–";
+
+function autoGuides(d, w, h) {                        // Startvorschlag für Kartenrand und Innenrahmen (du korrigierst von Hand)
+  const px = (x, y) => (y * w + x) * 4, dist = (i, c) => Math.abs(d[i] - c[0]) + Math.abs(d[i + 1] - c[1]) + Math.abs(d[i + 2] - c[2]);
+  const s = [0, 0, 0]; let n = 0;
+  const add = (x, y) => { const i = px(x, y); s[0] += d[i]; s[1] += d[i + 1]; s[2] += d[i + 2]; n++; };
+  const m = Math.max(1, Math.round(Math.min(w, h) * 0.02));
+  for (let x = 0; x < w; x++) for (let k = 0; k < m; k++) { add(x, k); add(x, h - 1 - k); }
+  for (let y = 0; y < h; y++) for (let k = 0; k < m; k++) { add(k, y); add(w - 1 - k, y); }
+  const bg = s.map(v => v / n);
+  const colFrac = x => { let c = 0, t = 0; for (let y = Math.round(h * .25); y < h * .75; y++) { t++; if (dist(px(x, y), bg) > 60) c++; } return c / t; };
+  const rowFrac = y => { let c = 0, t = 0; for (let x = Math.round(w * .25); x < w * .75; x++) { t++; if (dist(px(x, y), bg) > 60) c++; } return c / t; };
+  let x0 = 0; while (x0 < w && colFrac(x0) < .6) x0++;
+  let x1 = w - 1; while (x1 > x0 && colFrac(x1) < .6) x1--;
+  let y0 = 0; while (y0 < h && rowFrac(y0) < .6) y0++;
+  let y1 = h - 1; while (y1 > y0 && rowFrac(y1) < .6) y1--;
+  if (x1 - x0 < w * .3 || y1 - y0 < h * .3) return null;
+  const cw = x1 - x0, ch = y1 - y0;
+  const avg = (xa, xb, ya, yb) => { const c = [0, 0, 0]; let k = 0; for (let y = Math.round(ya); y <= Math.round(yb); y++) for (let x = Math.round(xa); x <= Math.round(xb); x++) { const i = px(x, y); c[0] += d[i]; c[1] += d[i + 1]; c[2] += d[i + 2]; k++; } return c.map(v => v / Math.max(1, k)); };
+  const cd = (a, b) => Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) + Math.abs(a[2] - b[2]);
+  const scan = (axis, dir) => {                        // vom Kartenrand nach innen bis zur ersten deutlichen Farbänderung
+    const len = axis === "x" ? cw : ch, start = axis === "x" ? (dir > 0 ? x0 : x1) : (dir > 0 ? y0 : y1);
+    const along = axis === "x" ? [y0 + ch * .35, y0 + ch * .65] : [x0 + cw * .35, x0 + cw * .65];
+    const at = k => { const v = start + dir * k; return axis === "x" ? avg(v, v, along[0], along[1]) : avg(along[0], along[1], v, v); };
+    const base = at(Math.max(1, Math.round(len * .015)));
+    for (let k = Math.round(len * .03); k < len * .22; k++) if (cd(at(k), base) > 70) return start + dir * k;
+    return start + dir * Math.round(len * .06);
+  };
+  return {ox0: x0 / w, ox1: (x1 + 1) / w, oy0: y0 / h, oy1: (y1 + 1) / h, ix0: scan("x", 1) / w, ix1: scan("x", -1) / w, iy0: scan("y", 1) / h, iy1: scan("y", -1) / h};
+}
+
+const fileToCanvas = file => new Promise((ok, no) => {   // Foto laden, auf max. 2000 px verkleinern (EXIF-Drehung wird vom Browser berücksichtigt)
+  const url = URL.createObjectURL(file), i = new Image();
+  i.onload = () => {
+    const k = Math.min(1, 2000 / Math.max(i.naturalWidth, i.naturalHeight)), c = document.createElement("canvas");
+    c.width = Math.round(i.naturalWidth * k); c.height = Math.round(i.naturalHeight * k);
+    c.getContext("2d").drawImage(i, 0, 0, c.width, c.height); URL.revokeObjectURL(url); ok(c);
+  };
+  i.onerror = () => { URL.revokeObjectURL(url); no(new Error("Foto nicht lesbar")); };
+  i.src = url;
+});
+const jpegOf = (cv, maxW, q = .88) => { const k = Math.min(1, maxW / cv.width), c = document.createElement("canvas"); c.width = Math.round(cv.width * k); c.height = Math.round(cv.height * k); c.getContext("2d").drawImage(cv, 0, 0, c.width, c.height); return c.toDataURL("image/jpeg", q).split(",")[1]; };
+
+function sideImages(k) {                              // ganzes Foto plus vier Ecken-Ausschnitte (für die KI)
+  const s = G.sides[k], pfx = k === "front" ? "f" : "b", g = s.g, W = s.big.width, H = s.big.height;
+  const x0 = g.ox0 * W, x1 = g.ox1 * W, y0 = g.oy0 * H, y1 = g.oy1 * H, sz = (x1 - x0) * .2, pad = (x1 - x0) * .01;
+  const out = [{label: k, data: jpegOf(s.big, 1280)}];
+  for (const [lab, cx, cy] of [["TL", x0 - pad, y0 - pad], ["TR", x1 + pad - sz, y0 - pad], ["BL", x0 - pad, y1 + pad - sz], ["BR", x1 + pad - sz, y1 + pad - sz]]) {
+    const c = document.createElement("canvas"); c.width = c.height = 480;
+    c.getContext("2d").drawImage(s.big, Math.max(0, cx), Math.max(0, cy), sz, sz, 0, 0, 480, 480);
+    out.push({label: pfx + lab, data: jpegOf(c, 480, .9)});
+  }
+  return out;
+}
+function centeringPayload() {
+  const o = {};
+  for (const k of GKEYS) { const s = G.sides[k]; if (s && !s.skip) { const c = centeringOf(s.g); o[k] = {l: c.l, r: c.r, t: c.t, b: c.b}; } }
+  return o;
+}
+
+function evCalc(est, raw, cost, prices) {              // lohnt sich das Einschicken? (Preise gibst du selbst ein)
+  if (!est || est.best == null) return null;
+  const known = Object.keys(prices).filter(k => prices[k] > 0).map(Number).sort((a, b) => a - b);
+  const priceOf = g => { if (prices[g] > 0) return prices[g]; const below = known.filter(k => k < g).pop(); return below ? prices[below] : raw; };
+  const cap = Math.min(est.cap_front, est.cap_back, 10);
+  const spread = est.conf === "hoch" ? [[0, .45], [-1, .25], [1, .2], [-2, .1]] : [[0, .35], [-1, .25], [1, .15], [-2, .15], [-3, .1]];
+  const dist = {};
+  for (const [d, w] of spread) { const g = Math.max(1, Math.min(cap, est.best + d)); dist[g] = (dist[g] || 0) + w; }
+  const rows = Object.keys(dist).map(Number).sort((a, b) => b - a).map(g => ({g, p: dist[g], price: priceOf(g), net: priceOf(g) - cost - raw}));
+  const ev = rows.reduce((a, r) => a + r.p * r.price, 0);
+  return {rows, ev, net: ev - cost - raw, breakEven: known.find(g => prices[g] - cost - raw >= 0) || null};
+}
+
+function openGrade(card) {
+  Object.assign(G, {card: card || null, sides: {front: null, back: null}, est: null, ai: null, cen: null, subs: {}, msg: "", busy: false, view: "wizard"});
+  try { G.ev = {cost: localStorage.getItem("gcost") || "25", p7: "", p8: "", p9: "", p10: ""}; } catch (e) { G.ev = {cost: "25"}; }
+  $("#gmodal").style.display = "block"; renderGrade();
+}
+async function setPhoto(k, file) {
+  try {
+    const big = await fileToCanvas(file), sm = document.createElement("canvas"), kx = Math.min(1, 240 / big.width);
+    sm.width = Math.max(1, Math.round(big.width * kx)); sm.height = Math.max(1, Math.round(big.height * kx));
+    const x = sm.getContext("2d", {willReadFrequently: true}); x.drawImage(big, 0, 0, sm.width, sm.height);
+    const guess = autoGuides(x.getImageData(0, 0, sm.width, sm.height).data, sm.width, sm.height);
+    G.sides[k] = {big, g: guess || guidesDefault(), skip: false, guessed: !!guess};
+  } catch (e) { return alert("Das Foto konnte nicht geladen werden."); }
+  G.est = null; renderGrade();
+}
+function pickPhoto(k, camera) {
+  const i = document.createElement("input"); i.type = "file"; i.accept = "image/*"; if (camera) i.setAttribute("capture", "environment");
+  i.onchange = () => { if (i.files[0]) setPhoto(k, i.files[0]); }; i.click();
+}
+
+const SUBN = [["corners", "Ecken"], ["edges", "Kanten"], ["surface", "Oberfläche"], ["print", "Druck"]];
+function centerTxt(k) {
+  const s = G.sides[k]; if (!s) return "";
+  if (s.skip) return "Zentrierung wird für diese Seite nicht gewertet.";
+  const c = centeringOf(s.g), w = Math.round(c.worst), cap = k === "front" ? capOf(c.worst, FRONT_CAPS, 1) : capOf(c.worst, BACK_CAPS, 5);
+  return `Links/Rechts <b>${ratioTxt(c.l, c.r)}</b> · Oben/Unten <b>${ratioTxt(c.t, c.b)}</b> · schlechtester Wert <b>${w}/${100 - w}</b> → Zentrierung erlaubt höchstens <b style="color:${gcolor(cap)}">PSA ${cap}</b> (${k === "front" ? "Vorderseite" : "Rückseite"})`;
+}
+function photoBlock(k) {
+  const s = G.sides[k], name = k === "front" ? "Vorderseite" : "Rückseite (optional, für die Rückseiten-Zentrierung und Oberfläche)";
+  return `<div class="gsec"><b>${name}</b>
+    <div class="acts"><button data-gpick="${k}:cam">${s ? "Neues Foto aufnehmen" : "Foto aufnehmen"}</button><button class="alt" data-gpick="${k}:gal">Aus Galerie wählen</button>${s ? `<button class="alt" data-gdel="${k}">Entfernen</button>` : ""}</div>
+    ${s ? `<p><small>${s.guessed ? "Die Linien sind ein Vorschlag der App. " : "Die Linien konnten nicht automatisch gesetzt werden. "}Ziehe die <b style="color:var(--cyan)">blauen</b> Linien genau an den äußeren Kartenrand und die <b style="color:var(--yel)">gelben</b> Linien an den inneren Rand des Rahmens (wo das Bild beginnt). Beim Ziehen zeigt eine Lupe oben rechts den Ausschnitt. Zum Scrollen den Rand neben dem Bild berühren.</small></p>
+      <canvas class="gedit" data-k="${k}"></canvas><p data-gc="${k}">${centerTxt(k)}</p>
+      <label><input type="checkbox" data-gskip="${k}" ${s.skip ? "checked" : ""}> Zentrierung nicht messbar (z. B. Fullart ohne Rand)</label>` : ""}</div>`;
+}
+function resultBlock() {
+  const e = G.est; if (!e) return "";
+  const head = e.best != null
+    ? `<div class="gbig" style="color:${gcolor(e.best)}">PSA ${e.best} · ${e.name}</div><p>Wahrscheinliche Spanne: <b>PSA ${e.low} bis ${e.high}</b> · Sicherheit der Schätzung: <b>${e.conf}</b></p>`
+    : `<div class="gbig">Noch keine Note</div><p>Allein nach der Zentrierung wären <b>höchstens PSA ${e.high}</b> möglich. Für eine Note brauchst du Teilnoten (KI-Hilfe oder eigene Eingabe unten).</p>`;
+  const a = G.ai;
+  return `<div class="gsec"><h3 class="ser">Ergebnis</h3>${G.msg ? `<p>${G.msg}</p>` : ""}${head}
+    <p>Bremst am meisten: <b>${e.limiting}</b>${e.centering_borderline ? " · Die Zentrierung liegt knapp an einer Grenze, kleine Messfehler können die Note ändern." : ""}</p>
+    <p><small>Teilnoten (1 bis 10, auch halbe Punkte). Die KI füllt sie aus, du kannst sie ändern und neu berechnen:</small></p>
+    <div>${SUBN.map(([k, l]) => `<label>${l} <input class="gnum" type="number" min="1" max="10" step="0.5" data-gsub="${k}" value="${G.subs[k] ?? ""}"></label>`).join("")}</div>
+    <div class="acts"><button class="alt" id="grecalc">Neu berechnen</button></div>
+    ${a ? `${a.photo.notes || a.photo.glare !== "none" || a.photo.in_sleeve || !a.photo.sharp ? `<p class="gdef">Foto: ${[a.photo.in_sleeve ? "Karte steckt in einer Hülle" : "", a.photo.glare !== "none" ? "Spiegelung (" + a.photo.glare + ")" : "", !a.photo.sharp ? "nicht scharf" : "", a.photo.notes].filter(Boolean).join(", ")}</p>` : ""}
+      ${SUBN.map(([k, l]) => a[k].defects.length ? `<p class="gdef"><b>${l}:</b> ${a[k].defects.join("; ")}</p>` : "").join("")}
+      ${a.summary ? `<p>${a.summary}</p>` : ""}` : ""}
+    <p><small>Gleichwertig zur BGS-Denkweise: Zentrierung, Ecken, Kanten und Oberfläche werden einzeln beurteilt. PSA vergibt eine Gesamtnote, die vom schwächsten Punkt geprägt wird.</small></p></div>`;
+}
+function evResult() {
+  const e = G.est, raw = +G.ev.raw || 0, cost = +G.ev.cost || 0, prices = {7: +G.ev.p7, 8: +G.ev.p8, 9: +G.ev.p9, 10: +G.ev.p10};
+  const r = evCalc(e, raw, cost, prices);
+  if (!r) return "<p><small>Sobald eine Note vorliegt, rechnet die App hier durch, ob sich das Einschicken lohnt.</small></p>";
+  if (!Object.values(prices).some(v => v > 0)) return "<p><small>Trage mindestens einen Preis für eine PSA-Note ein, dann siehst du die Rechnung.</small></p>";
+  const verdict = r.net > cost * 0.5 ? "Lohnt sich voraussichtlich" : r.net > 0 ? "Grenzfall, kleiner Gewinn" : "Eher nicht, der erwartete Gewinn deckt die Kosten nicht";
+  return `<table class="gtbl"><tr><th>Note</th><th>Wahrscheinlichkeit</th><th>Wert</th><th>Gewinn/Verlust</th></tr>
+    ${r.rows.map(x => `<tr><td>PSA ${x.g}</td><td>${Math.round(x.p * 100)} %</td><td>${eur(x.price)}</td><td style="color:${x.net >= 0 ? "var(--green)" : "#ff7a7a"}">${eur(x.net)}</td></tr>`).join("")}</table>
+    <p>Erwarteter Wert nach dem Grading <b>${eur(r.ev)}</b> · erwarteter Gewinn gegenüber dem Rohverkauf <b style="color:${r.net >= 0 ? "var(--green)" : "#ff7a7a"}">${eur(r.net)}</b>${r.breakEven ? ` · ab <b>PSA ${r.breakEven}</b> lohnt es sich` : ""}</p><p><b>${verdict}.</b></p>
+    <p><small>Die Wahrscheinlichkeiten sind eine grobe Annahme um deine geschätzte Note. Preise für graduierte Karten findest du z. B. bei eBay unter "verkaufte Artikel" oder in Preisportalen.</small></p>`;
+}
+function evBlock() {
+  const ev = G.ev;
+  return `<div class="gsec"><h3 class="ser">Lohnt sich das Einschicken?</h3>
+    <p><small>Gib die Kosten und aktuelle Marktpreise für graduierte Exemplare ein (Richtwerte reichen). Die App kennt keine Preise für graduierte Karten.</small></p>
+    <div><label>Rohwert (€) <input class="gnum" type="number" min="0" step="0.5" data-gev="raw" value="${ev.raw ?? ""}"></label><label>Grading-Kosten (€) <input class="gnum" type="number" min="0" step="0.5" data-gev="cost" value="${ev.cost ?? ""}"></label></div>
+    <div>${[7, 8, 9, 10].map(g => `<label>PSA ${g} (€) <input class="gnum" type="number" min="0" step="0.5" data-gev="p${g}" value="${ev["p" + g] ?? ""}"></label>`).join("")}</div>
+    <div id="gevres">${evResult()}</div></div>`;
+}
+function renderGrade() {
+  if (G.view === "list") return renderGradeList();
+  if (G.ev.raw == null && G.card) G.ev.raw = G.card.price != null ? String(G.card.price) : "";
+  $("#gbody").innerHTML = `<p><small>Vorab-Einschätzung, wie deine Karte bei PSA oder ähnlichen Firmen abschneiden könnte. Die Zentrierung misst du selbst (objektiv, nach den veröffentlichten PSA-Grenzen), Ecken, Kanten und Oberfläche beurteilt die KI aus deinen Fotos. Das ist eine Schätzung und kein Ersatz für die echte Bewertung. Nicht mit PSA verbunden.</small></p>
+    ${G.card ? `<div class="gsec"><b>${G.card.name}</b> · ${G.card.set_name} ${G.card.local_id} · Rohwert ${eur(G.card.price)}</div>` : ""}
+    <div class="gsec"><h3 class="ser">1. Fotos</h3><p><small>Für gute Ergebnisse: Foto mit der normalen Kamera-App (hohe Auflösung), Tageslicht ohne Blitz, einfarbiger Untergrund, <b>Karte ohne Hülle oder Toploader</b>, Kamera gerade darüber, keine Spiegelung. Nimm das Foto lieber nicht aus dem Video der Scan-Kamera.</small></p></div>
+    ${photoBlock("front")}${photoBlock("back")}
+    <div class="gsec"><h3 class="ser">2. Einschätzung</h3>
+      <div class="acts"><button id="grun" ${G.busy || !G.sides.front ? "disabled" : ""}>${G.busy ? "Wird ausgewertet …" : AIC.configured ? "Einschätzen (mit KI)" : "Zentrierung auswerten"}</button></div>
+      ${AIC.configured ? "" : "<p><small>Die KI-Hilfe ist nicht eingerichtet (Kamerafenster, Knopf KI einrichten). Dann wird nur die Zentrierung ausgewertet, die Teilnoten kannst du selbst eintragen.</small></p>"}</div>
+    ${resultBlock()}${G.est ? evBlock() : ""}
+    ${G.est ? `<div class="acts"><button id="gsave">Als Grading-Kandidat speichern</button></div>` : ""}`;
+  for (const k of GKEYS) drawEdit(k);
+}
+function drawEdit(k) {
+  const s = G.sides[k], cv = $(`#gbody .gedit[data-k="${k}"]`); if (!s || !cv) return;
+  const W = 800, H = Math.round(W * s.big.height / s.big.width); cv.width = W; cv.height = H;
+  const x = cv.getContext("2d"); x.drawImage(s.big, 0, 0, W, H);
+  if (!s.skip) for (const [key, ax, kind] of GLINES) {
+    x.strokeStyle = kind === "o" ? "#5ce1e6" : "#ffcb05"; x.lineWidth = 2; x.beginPath();
+    if (ax === "x") { x.moveTo(s.g[key] * W, 0); x.lineTo(s.g[key] * W, H); } else { x.moveTo(0, s.g[key] * H); x.lineTo(W, s.g[key] * H); }
+    x.stroke();
+  }
+  const out = $(`#gbody [data-gc="${k}"]`); if (out) out.innerHTML = centerTxt(k);
+}
+function setLine(s, key, v) {
+  const g = s.g, m = .01, lim = {ox0: [0, g.ix0 - m], ox1: [g.ix1 + m, 1], oy0: [0, g.iy0 - m], oy1: [g.iy1 + m, 1], ix0: [g.ox0 + m, g.ix1 - m], ix1: [g.ix0 + m, g.ox1 - m], iy0: [g.oy0 + m, g.iy1 - m], iy1: [g.iy0 + m, g.oy1 - m]}[key];
+  g[key] = Math.min(lim[1], Math.max(lim[0], v));
+}
+function loupe(k, nx, ny, ax) {
+  const s = G.sides[k], c = $("#gloupe"), x = c.getContext("2d"), r = 24, bx = nx * s.big.width, by = ny * s.big.height;
+  c.style.display = "block"; x.imageSmoothingEnabled = false; x.clearRect(0, 0, 120, 120);
+  x.drawImage(s.big, bx - r, by - r, r * 2, r * 2, 0, 0, 120, 120);
+  x.strokeStyle = "#ff3b3b"; x.lineWidth = 1; x.beginPath();
+  if (ax === "x") { x.moveTo(60, 0); x.lineTo(60, 120); } else { x.moveTo(0, 60); x.lineTo(120, 60); }
+  x.stroke();
+}
+function gpoint(e) { const cv = e.target, r = cv.getBoundingClientRect(); return [(e.clientX - r.left) / r.width, (e.clientY - r.top) / r.height, r]; }
+
+const gbody = () => $("#gbody");
+gbody().addEventListener("pointerdown", e => {
+  const cv = e.target.closest(".gedit"); if (!cv) return;
+  const k = cv.dataset.k, s = G.sides[k]; if (!s || s.skip) return;
+  const [nx, ny, r] = gpoint({target: cv, clientX: e.clientX, clientY: e.clientY});
+  let best = null, bd = 1e9;
+  for (const [key, ax] of GLINES) { const d = Math.abs((ax === "x" ? nx : ny) - s.g[key]) * (ax === "x" ? r.width : r.height); if (d < bd) { bd = d; best = [key, ax]; } }
+  if (!best || bd > 22) return;
+  G.drag = {k, key: best[0], ax: best[1], cv}; cv.setPointerCapture(e.pointerId); e.preventDefault();
+});
+gbody().addEventListener("pointermove", e => {
+  if (!G.drag) return;
+  const {k, key, ax, cv} = G.drag, s = G.sides[k], [nx, ny] = gpoint({target: cv, clientX: e.clientX, clientY: e.clientY});
+  setLine(s, key, ax === "x" ? nx : ny); drawEdit(k); loupe(k, nx, ny, ax); G.est = null;
+});
+const gend = () => { if (G.drag) { G.drag = null; $("#gloupe").style.display = "none"; } };
+gbody().addEventListener("pointerup", gend); gbody().addEventListener("pointercancel", gend);
+
+gbody().addEventListener("click", async e => {
+  const t = e.target.closest("button"); if (!t) return;
+  if (t.dataset.gpick) { const [k, m] = t.dataset.gpick.split(":"); return pickPhoto(k, m === "cam"); }
+  if (t.dataset.gdel) { G.sides[t.dataset.gdel] = null; G.est = null; return renderGrade(); }
+  if (t.id === "grun") return gradeRun();
+  if (t.id === "grecalc") return gradeRecalc();
+  if (t.id === "gsave") return gradeSave();
+  if (t.dataset.gdelrow) { await post("/api/grades/delete", {id: +t.dataset.gdelrow}); return renderGradeList(); }
+  if (t.id === "gback") { G.view = "wizard"; return renderGrade(); }
+});
+gbody().addEventListener("change", e => {
+  const sk = e.target.dataset.gskip; if (sk) { G.sides[sk].skip = e.target.checked; G.est = null; return renderGrade(); }
+  if (e.target.dataset.gsub) { G.subs[e.target.dataset.gsub] = e.target.value; return; }
+});
+gbody().addEventListener("input", e => {
+  const k = e.target.dataset.gev; if (!k) return;
+  G.ev[k] = e.target.value; if (k === "cost") { try { localStorage.setItem("gcost", e.target.value); } catch (er) {} }
+  $("#gevres").innerHTML = evResult();
+});
+
+async function gradeRun() {
+  if (!G.sides.front || G.busy) return;
+  G.busy = true; renderGrade();
+  try {
+    const images = AIC.configured ? GKEYS.flatMap(k => G.sides[k] ? sideImages(k) : []) : [];
+    const r = await post("/api/grade-ai", {images, centering: centeringPayload()});
+    G.est = r.estimate; G.ai = r.ai; G.cen = r.centering; G.msg = r.msg || "";
+    if (r.ai) SUBN.forEach(([k]) => { G.subs[k] = r.ai[k].score; });
+    if (r.estimate && r.estimate.best != null) sfx("catch");
+  } catch (e) { G.msg = "Die Auswertung ist fehlgeschlagen: " + e.message; }
+  G.busy = false; renderGrade();
+}
+async function gradeRecalc() {
+  const r = await post("/api/grade-calc", {centering: centeringPayload(), subs: G.subs, photo: G.ai ? G.ai.photo : null});
+  G.est = r.estimate; G.cen = r.centering; renderGrade();
+}
+async function gradeSave() {
+  const c = G.card || {}, f = G.cen && G.cen.front, b = G.cen && G.cen.back;
+  await post("/api/grades", {card_id: c.id || null, name: c.name || "Unbekannte Karte", set_name: c.set_name || "", image: c.image || "", estimate: G.est,
+    cen_f: f ? f.worst : null, cen_b: b ? b.worst : null, raw_price: G.ev.raw ? +G.ev.raw : (c.price ?? null), notes: G.ai ? G.ai.summary : ""});
+  toast("Gespeichert", "Die Einschätzung steht unter \"Gespeichert\" (Grading-Kandidaten).");
+}
+async function renderGradeList() {
+  G.view = "list";
+  const rows = await (await fetch("/api/grades")).json();
+  $("#gbody").innerHTML = `<div class="acts"><button class="alt" id="gback">‹ Zurück zum Check</button></div>
+    <p><small>Gespeicherte Einschätzungen, beste Note zuerst. Das sind deine Grading-Kandidaten.</small></p>
+    ${rows.length ? `<table class="gtbl"><tr><th></th><th>Karte</th><th>Note (Spanne)</th><th>Bremst</th><th>Rohwert</th><th></th></tr>${rows.map(r => `<tr><td>${r.image ? `<img src="${r.image}" alt="" style="width:46px;border-radius:4px">` : ""}</td>
+      <td>${r.name}<br><small>${r.set_name || ""} · ${r.ts}</small></td><td style="color:${gcolor(r.best || 0)}">${r.best != null ? "PSA " + r.best : "–"}<br><small>${r.low != null ? r.low + " bis " + r.high : ""}</small></td>
+      <td><small>${r.limiting || ""}</small></td><td>${eur(r.raw_price)}</td><td><button class="alt" data-gdelrow="${r.id}">Löschen</button></td></tr>`).join("")}</table>` : "<p>Noch nichts gespeichert.</p>"}`;
+}
+
+/* ---------- Auf Cardmarket verkaufen (Auswahl, Assistent, gelistete Karten) ---------- */
+const V = {rows: [], adj: 0, round: "05", step: 0, queue: [], view: "select"};
+const LANGC = {de: "Deutsch", en: "Englisch", ja: "Japanisch"};
+const vprice = p => {                                 // Vorschlag aus dem Trend: Anpassung in %, Rundung, Mindestpreis 0,02 €
+  if (p == null) return "";
+  let x = p * (1 + V.adj / 100);
+  if (V.round === "05") x = Math.round(x * 20) / 20;
+  else if (V.round === "09") x = Math.round(x * 10) / 10 - 0.01;   // nächste x,x9 (z. B. 1,23 -> 1,19, 4,00 -> 3,99)
+  return Math.max(0.02, Math.round(x * 100) / 100).toFixed(2);
+};
+const varTxt = v => v && v !== "normal" ? (VARIANT_TXT[v] || v) : "Normal";
+const VARIANT_TXT = {reverse: "Reverse Holo", holo: "Holo", pokeball: "Pokéball-Muster", greatball: "Superball-Muster", ultraball: "Hyperball-Muster", masterball: "Meisterball-Muster"};
+
+async function openSell() {
+  V.view = "select"; $("#vmodal").style.display = "block"; $("#vtitle").textContent = "Auf Cardmarket verkaufen"; $("#vbody").textContent = "Lade …";
+  const side = await (await fetch("/api/cards?side=1")).json();
+  V.rows = side.map(c => ({c, avail: Math.max(0, c.spare - (c.listed || 0)), on: false, qty: 1, cond: c.cond || "NM", price: ""}))
+    .filter(r => r.avail > 0).sort((a, b) => (b.c.price || 0) - (a.c.price || 0));
+  V.rows.forEach(r => { r.qty = r.avail; r.price = vprice(r.c.price); });
+  renderSell();
+}
+function vsum() { const s = V.rows.filter(r => r.on); return {n: s.reduce((a, r) => a + (+r.qty || 0), 0), v: s.reduce((a, r) => a + (+r.qty || 0) * (+r.price || 0), 0), k: s.length}; }
+function renderSell() {
+  const t = vsum();
+  $("#vbody").innerHTML = V.rows.length ? `<p><small>Wähle die Karten aus dem Nebenstapel, die du verkaufen willst. Anzahl, Zustand und Preis kannst du je Karte ändern. Der Preis ist ein Vorschlag aus dem Cardmarket-Trend.</small></p>
+    <div class="vctl"><label>Preis-Anpassung <select id="vadj">${[-20, -15, -10, -5, 0, 5, 10].map(x => `<option value="${x}"${V.adj === x ? " selected" : ""}>${x > 0 ? "+" : ""}${x} % zum Trend</option>`).join("")}</select></label>
+      <label>Rundung <select id="vround"><option value="05"${V.round === "05" ? " selected" : ""}>auf 0,05 €</option><option value="09"${V.round === "09" ? " selected" : ""}>auf x,x9 (z. B. 1,19)</option><option value="no"${V.round === "no" ? " selected" : ""}>keine</option></select></label>
+      <button class="alt" id="vapply">Preise neu vorschlagen</button><button class="alt" id="vall">Alle auswählen</button><button class="alt" id="vnone">Keine</button></div>
+    <table class="vtbl"><tr><th></th><th></th><th>Karte</th><th class="vhide">Sprache</th><th>Zustand</th><th>Anzahl</th><th>Preis (€)</th><th class="vhide">Trend</th></tr>
+    ${V.rows.map((r, i) => `<tr class="${r.on ? "" : "off"}"><td><input type="checkbox" data-von="${i}" ${r.on ? "checked" : ""} aria-label="Auswählen"></td>
+      <td>${r.c.image ? `<img src="${r.c.image}" alt="" loading="lazy" onerror="this.remove()">` : ""}</td>
+      <td><b>${r.c.name}</b><br><small>${r.c.set_name} ${r.c.local_id} · ${varTxt(r.c.variant)}${r.c.listed ? ` · ${r.c.listed}× schon gelistet` : ""}</small></td>
+      <td class="vhide">${LANGC[r.c.lang] || r.c.lang}</td>
+      <td><select data-vcond="${i}">${condOpts(r.cond)}</select></td>
+      <td><input type="number" min="1" max="${r.avail}" step="1" value="${r.qty}" data-vqty="${i}"><br><small>von ${r.avail}</small></td>
+      <td><input type="number" min="0.02" step="0.01" value="${r.price}" data-vprice="${i}"></td>
+      <td class="vhide">${eur(r.c.price)}</td></tr>`).join("")}</table>
+    <div class="vfoot"><span id="vsum">${t.k} Karten · ${t.n} Exemplare · ${eur(t.v)}</span>
+      <button id="vstart" ${t.k ? "" : "disabled"}>Listing-Assistent starten</button>
+      <button class="alt" id="vcsv" ${t.k ? "" : "disabled"}>CSV für Massenlistung</button></div>`
+    : "<p>Im Nebenstapel gibt es nichts mehr, das noch nicht gelistet ist.</p><div class='acts'><button class='alt' id='vshowlisted'>Gelistete Karten ansehen</button></div>";
+}
+function vupd() { const t = vsum(); $("#vsum").textContent = `${t.k} Karten · ${t.n} Exemplare · ${eur(t.v)}`; $("#vstart").disabled = $("#vcsv").disabled = !t.k; }
+const vitems = () => V.rows.filter(r => r.on).map(r => ({card_id: r.c.id, qty: +r.qty, price: +r.price, cond: r.cond}));
+function vcheck() {
+  const bad = V.rows.filter(r => r.on && (!(+r.qty >= 1) || +r.qty > r.avail || !(+r.price >= 0.02)));
+  if (bad.length) { alert(`Bitte prüfen: ${bad.map(r => r.c.name).join(", ")}\nAnzahl zwischen 1 und der verfügbaren Menge, Preis mindestens 0,02 €.`); return false; }
+  return true;
+}
+
+function renderStep() {
+  const r = V.queue[V.step];
+  if (!r) {
+    $("#vtitle").textContent = "Fertig";
+    $("#vbody").innerHTML = `<p>Alle ausgewählten Karten sind durch. Gelistete Karten findest du unter <b>Gelistet</b>. Wenn etwas verkauft wird, markierst du es dort als <b>Verkauft</b>, dann sinkt die Anzahl in deiner Sammlung.</p>
+      <div class="acts"><button id="vshowlisted">Gelistete Karten ansehen</button><button class="alt" id="vback">Weitere Karten auswählen</button></div>`;
+    return;
+  }
+  const c = r.c, foil = ["reverse", "holo", "pokeball", "greatball", "ultraball", "masterball"].includes(c.variant || "");
+  $("#vtitle").textContent = `Karte ${V.step + 1} von ${V.queue.length}`;
+  $("#vbody").innerHTML = `<div class="vstep">${c.image ? `<img src="${c.image}" alt="${c.name}">` : ""}<div style="flex:1;min-width:260px">
+      <p style="font-size:26px">${c.name}</p><p>${c.set_name} · Nr. ${c.local_id} · ${varTxt(c.variant)}</p>
+      <div class="vval">
+        <b>Sprache</b><span>${LANGC[c.lang] || c.lang}</span><span></span>
+        <b>Zustand</b><span>${r.cond} (${(CONDS.find(x => x[0] === r.cond) || [0, ""])[1]})</span><button class="alt" data-vcopy="${r.cond}">Kopieren</button>
+        <b>Foil</b><span>${foil ? "Ja" : "Nein"}${["pokeball", "greatball", "ultraball", "masterball"].includes(c.variant) ? " (eigenes Muster-Produkt auswählen)" : ""}</span><span></span>
+        <b>Anzahl</b><span>${r.qty}</span><button class="alt" data-vcopy="${r.qty}">Kopieren</button>
+        <b>Preis</b><span>${(+r.price).toFixed(2).replace(".", ",")} €</span><button class="alt" data-vcopy="${(+r.price).toFixed(2).replace(".", ",")}">Kopieren</button>
+      </div>
+      <ol style="padding-left:20px;line-height:1.15"><li>Mit dem Knopf unten die Karte auf Cardmarket öffnen (dort angemeldet sein).</li><li>Auf der Kartenseite den Verkaufen-Bereich öffnen und die Werte von hier eintragen.</li><li>Auf Cardmarket bestätigen, dann hier <b>Eingestellt</b> drücken.</li></ol>
+      <div class="acts"><button id="vopen">Auf Cardmarket öffnen</button><button id="vdone">Eingestellt, weiter</button><button class="alt" id="vskip">Überspringen</button>
+        ${V.step ? '<button class="alt" id="vprev">Zurück</button>' : ""}<button class="alt" id="vstop">Abbrechen</button></div></div></div>`;
+}
+
+async function renderListed() {
+  V.view = "listed"; $("#vtitle").textContent = "Auf Cardmarket gelistet"; $("#vmodal").style.display = "block"; $("#vbody").textContent = "Lade …";
+  const [L, S] = await Promise.all([(await fetch("/api/listings")).json(), (await fetch("/api/listings?status=sold")).json()]);
+  const val = L.reduce((a, r) => a + r.qty * r.price, 0), sold = S.reduce((a, r) => a + r.qty * r.price, 0);
+  $("#vbody").innerHTML = `<p>${L.reduce((a, r) => a + r.qty, 0)} Exemplare gelistet, Angebotswert ${eur(val)} · bisher verkauft: ${S.reduce((a, r) => a + r.qty, 0)} Exemplare für ${eur(sold)}</p>
+    <p><small><b>Verkauft</b> zieht die Exemplare von deiner Sammlung ab (bei Binder-Karten bleibt die Binder-Karte immer erhalten). <b>Zurückgezogen</b> heißt, du hast das Angebot auf Cardmarket gelöscht, die Karte bleibt in der Sammlung.</small></p>
+    ${L.length ? `<table class="vtbl"><tr><th></th><th>Karte</th><th>Anzahl</th><th>Preis</th><th class="vhide">Seit</th><th></th></tr>
+      ${L.map(r => `<tr><td>${r.image ? `<img src="${r.image}" alt="" loading="lazy" onerror="this.remove()">` : ""}</td>
+        <td><b>${r.name}</b><br><small>${r.set_name || ""} ${r.local_id || ""} · ${r.cond} · ${LANGC[r.lang] || r.lang || ""}</small></td>
+        <td>${r.qty}×</td><td>${eur(r.price)}</td><td class="vhide"><small>${r.ts}</small></td>
+        <td><div class="acts" style="margin:0"><button data-vsold="${r.id}" data-q="${r.qty}">Verkauft</button><button class="alt" data-vrem="${r.id}">Zurückgezogen</button>${r.cm_url ? `<button class="alt" data-vurl="${r.cm_url}">Öffnen</button>` : ""}</div></td></tr>`).join("")}</table>`
+      : "<p>Noch nichts gelistet.</p>"}
+    ${S.length ? `<h3 class="ser">Verkauft</h3><table class="vtbl">${S.slice(0, 50).map(r => `<tr><td>${r.name}</td><td>${r.qty}×</td><td>${eur(r.price)}</td><td><small>${r.done_ts || ""}</small></td></tr>`).join("")}</table>` : ""}
+    <div class="acts"><button class="alt" id="vback">Karten zum Verkaufen auswählen</button></div>`;
+}
+
+const vb = () => $("#vbody");
+vb().addEventListener("change", e => {
+  const t = e.target, d = t.dataset;
+  if (d.von != null) { V.rows[+d.von].on = t.checked; t.closest("tr").classList.toggle("off", !t.checked); return vupd(); }
+  if (d.vcond != null) V.rows[+d.vcond].cond = t.value;
+  if (t.id === "vadj") V.adj = +t.value;
+  if (t.id === "vround") V.round = t.value;
+});
+vb().addEventListener("input", e => {
+  const d = e.target.dataset;
+  if (d.vqty != null) { V.rows[+d.vqty].qty = e.target.value; if (!V.rows[+d.vqty].on) { V.rows[+d.vqty].on = true; renderSell(); } else vupd(); }
+  if (d.vprice != null) { V.rows[+d.vprice].price = e.target.value; vupd(); }
+});
+vb().addEventListener("click", async e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.id === "vapply") { V.rows.forEach(r => r.price = vprice(r.c.price)); return renderSell(); }
+  if (b.id === "vall" || b.id === "vnone") { V.rows.forEach(r => r.on = b.id === "vall"); return renderSell(); }
+  if (b.id === "vcsv") { if (!vcheck()) return; const r = await fetch("/api/cm-export.csv", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({items: vitems()})});
+    const a = document.createElement("a"); a.href = URL.createObjectURL(await r.blob()); a.download = "cardmarket-listing.csv"; document.body.appendChild(a); a.click(); a.remove();
+    return toast("CSV erstellt", "Damit kannst du ein Massen-Werkzeug füttern. Danach die Karten unter Gelistet eintragen (Assistent oder Knopf)."); }
+  if (b.id === "vstart") { if (!vcheck()) return; V.queue = V.rows.filter(r => r.on); V.step = 0; V.view = "assist"; return renderStep(); }
+  if (b.id === "vopen") return window.open(V.queue[V.step].c.cm_url, "_blank", "noopener");
+  if (b.dataset.vcopy != null) { try { await navigator.clipboard.writeText(b.dataset.vcopy); b.textContent = "Kopiert"; } catch (er) { b.textContent = b.dataset.vcopy; } return; }
+  if (b.id === "vdone") {
+    const r = V.queue[V.step], res = await post("/api/listings", {items: [{card_id: r.c.id, qty: +r.qty, price: +r.price, cond: r.cond}]});
+    if (!res.ok) return alert(res.errors.join("\n"));
+    sfx("plus"); V.step++; return renderStep();
+  }
+  if (b.id === "vskip") { V.step++; return renderStep(); }
+  if (b.id === "vprev") { V.step = Math.max(0, V.step - 1); return renderStep(); }
+  if (b.id === "vstop" || b.id === "vback") return openSell();
+  if (b.id === "vshowlisted") return renderListed();
+  if (b.dataset.vurl) return window.open(b.dataset.vurl, "_blank", "noopener");
+  if (b.dataset.vsold) {
+    const max = +b.dataset.q; let n = max;
+    if (max > 1) { const a = prompt(`Wie viele Exemplare wurden verkauft? (1 bis ${max})`, String(max)); if (a == null) return; n = Math.max(1, Math.min(max, parseInt(a, 10) || max)); }
+    const r = await post("/api/listings/act", {id: +b.dataset.vsold, action: "sold", qty: n}); if (!r.ok) return alert(r.msg);
+    sfx("catch"); load(); return renderListed();
+  }
+  if (b.dataset.vrem) { if (!confirm("Angebot als zurückgezogen markieren? Die Karte bleibt in deiner Sammlung.")) return; await post("/api/listings/act", {id: +b.dataset.vrem, action: "removed"}); return renderListed(); }
+});
+
+/* Statistik */
+const VARS = [["normal", "Normal"], ["reverse", "Reverse Holo"], ["holo", "Holo"], ["pokeball", "Pokéball-Muster"], ["greatball", "Superball-Muster"],
+  ["ultraball", "Hyperball-Muster"], ["masterball", "Meisterball-Muster"]];
+const varOpts = v => VARS.map(([k, l]) => `<option value="${k}"${(v || "normal") === k ? " selected" : ""}>${l}</option>`).join("");
+const PATTERNS = ["pokeball", "greatball", "ultraball", "masterball"];
+const srcNote = c => c.price_src === "own" ? "eigener Preis"
+  : c.price_src === "foil" ? (PATTERNS.includes(c.variant) ? "Foil-Preis, Muster evtl. teurer: eigenen Preis eintragen" : "Foil-Preis (Cardmarket)")
+  : c.price_src === "normal_fallback" ? "kein Foil-Preis bekannt, Normalpreis" : "";
+const bar = p => `<div class="sbar"><i style="width:${Math.max(0, Math.min(100, p))}%"></i></div>`;
+const pc = (a, b) => b ? Math.round(a / b * 100) : 0;
+const LANGN = {de: "Deutsch", en: "Englisch", ja: "Japanisch"};
+
+function lineChart(hist) {
+  if (hist.length < 2) return "<p><small>Der Verlauf füllt sich: Einmal pro Tag wird der Stand gespeichert, sobald du die Seite öffnest.</small></p>";
+  const W = 640, H = 170, L = 8, R = 8, T = 12, B = 22, max = Math.max(1, ...hist.map(x => Math.max(x.total, x.binder)));
+  const px = i => L + i * (W - L - R) / (hist.length - 1), py = v => T + (H - T - B) * (1 - v / max);
+  const line = (k, col) => `<polyline fill="none" stroke="${col}" stroke-width="2.5" points="${hist.map((x, i) => `${px(i).toFixed(1)},${py(x[k]).toFixed(1)}`).join(" ")}"/>`;
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="Wertverlauf">${line("total", "#5ce1e6")}${line("binder", "#ffcb05")}
+    <text x="${L}" y="${H - 6}" fill="#7fb0c0" font-size="12">${hist[0].day}</text>
+    <text x="${W - R}" y="${H - 6}" fill="#7fb0c0" font-size="12" text-anchor="end">${hist[hist.length - 1].day}</text>
+    <text x="${L}" y="${T + 10}" fill="#7fb0c0" font-size="12">max ${eur(max)}</text></svg>
+    <p><small><span style="color:#5ce1e6">■</span> alle Karten &nbsp; <span style="color:#ffcb05">■</span> Binder</small></p>`;
+}
+
+function achievements(s) {                         // Erfolge in Gruppen, Stufen mit Fortschritt
+  const L = Object.fromEntries(s.langs.map(l => [l.lang, l.n])), A = [], c = s.counters || {};
+  const add = (cat, name, desc, cur, goal, fmt = x => x) => A.push({id: name, cat, name, desc, cur: Math.min(cur, goal), goal, done: cur >= goal, fmt});
+  [[1, "Erster Fang"], [10, "Hosentaschen-Trainer"], [25, "Anfänger"], [50, "Arenabezwinger"], [100, "Sammler"], [250, "Profi"], [500, "Meister"], [750, "Pokémon-Legende"]]
+    .forEach(([n, name]) => add("Pokédex", name, `${n} Pokémon im Binder`, s.caught, n));
+  add("Pokédex", "Pokédex-Champion", "Alle Pokémon im Binder", s.caught, s.species);
+  s.gens.filter(g => g.total).forEach(g => {
+    add("Regionen", `Halbzeit in ${g.region}`, `Die Hälfte aller ${g.total} Pokémon aus ${g.region}`, g.caught, Math.ceil(g.total / 2));
+    add("Regionen", `${g.region}-Champion`, `Alle ${g.total} Pokémon aus ${g.region}`, g.caught, g.total);
+  });
+  [[50, "Kartenstapel"], [100, "Kartenberg"], [250, "Kartenlawine"], [500, "Kartenmeer"], [1000, "Kartenozean"], [2500, "Kartenuniversum"]]
+    .forEach(([n, name]) => add("Karten", name, `${n} Karten insgesamt`, s.cards, n));
+  [[50, "Sparschwein"], [100, "Goldgrube"], [250, "Schatztruhe"], [500, "Tresorknacker"], [1000, "Drachenhort"]]
+    .forEach(([n, name]) => add("Wert", name, `Binder im Wert von ${n} €`, s.value_binder, n, eur));
+  [[10, "Glücksfund"], [25, "Schatzsucher"], [50, "Jackpot"], [100, "Drachenschatz"], [250, "Legendärer Fund"]]
+    .forEach(([n, name]) => add("Wert", name, `Eine einzelne Karte über ${n} €`, s.max_price, n, eur));
+  [[5, "Fullart-Fan"], [10, "Kunstkenner"], [25, "Fullart-Sammler"], [50, "Fullart-Meister"], [100, "Galerist"], [250, "Museumsdirektor"]]
+    .forEach(([n, name]) => add("Fullart", name, `${n} Fullart-Karten im Binder`, s.fullart, n));
+  add("Sprachen & Sets", "Weltenbummler", "Karten in Deutsch, Englisch und Japanisch", ["de", "en", "ja"].filter(k => L[k] > 0).length, 3);
+  add("Sprachen & Sets", "Japan-Fan", "25 japanische Karten", L.ja || 0, 25);
+  add("Sprachen & Sets", "Englisch-Profi", "25 englische Karten", L.en || 0, 25);
+  [[5, "Set-Entdecker"], [15, "Set-Jäger"], [40, "Set-Reisender"]].forEach(([n, name]) => add("Sprachen & Sets", name, `Karten aus ${n} verschiedenen Sets`, s.sets_owned, n));
+  [[1, "Komplettist"], [3, "Perfektionist"], [10, "Set-Legende"]].forEach(([n, name]) => add("Sprachen & Sets", name, `${n} Set(s) komplett (alle Nummern bis zur Set-Größe)`, s.sets_complete.length, n));
+  [[3, "Dranbleiber"], [7, "Wochen-Serie"], [14, "Zwei-Wochen-Serie"], [30, "Monatsmeister"]]
+    .forEach(([n, name]) => add("Gewohnheiten", name, `${n} Tage in Folge Karten hinzugefügt`, s.streak_best, n));
+  [[1, "Erster Scan"], [25, "Scanner"], [100, "Scan-Profi"], [500, "Scan-Maschine"]].forEach(([n, name]) => add("Gewohnheiten", name, `${n} Karten per Kamera erkannt`, c.scans || 0, n));
+  [[1, "Pack-Öffner"], [5, "Display-Fan"], [20, "Booster-Junkie"]].forEach(([n, name]) => add("Gewohnheiten", name, `${n} Pack-Session(s) beendet`, c.sessions || 0, n));
+  add("Gewohnheiten", "Display-Held", "Eine Pack-Session mit mindestens 36 Karten", c.big_sessions || 0, 1);
+  add("Gewohnheiten", "Verkäufer", "Eine Verkaufsliste exportiert", c.exports || 0, 1);
+  [[1, "Gutachter"], [10, "Grading-Profi"]].forEach(([n, name]) => add("Gewohnheiten", name, `${n} Grading-Check(s) mit KI durchgeführt`, c.grade_checks || 0, n));
+  [[1, "Händler"], [25, "Marktstand"]].forEach(([n, name]) => add("Gewohnheiten", name, `${n} Angebot(e) auf Cardmarket eingestellt`, c.listings || 0, n));
+  [[1, "Erster Verkauf"], [50, "Kartenhändler"]].forEach(([n, name]) => add("Gewohnheiten", name, `${n} Karte(n) verkauft`, c.sold || 0, n));
+  [[1, "Kandidat"], [5, "Kandidatenliste"]].forEach(([n, name]) => add("Gewohnheiten", name, `${n} Grading-Einschätzung(en) gespeichert`, c.grades_saved || 0, n));
+  [[1, "Lieblingspokémon"], [10, "Fanclub"], [25, "Herzensangelegenheit"]].forEach(([n, name]) => add("Organisation", name, `${n} Favorit(en) markiert`, s.fav_count, n));
+  [[1, "Wunschzettel"], [10, "Lange Liste"], [50, "Sehnsuchts-Sammler"]].forEach(([n, name]) => add("Organisation", name, `${n} Karte(n) auf der Wunschliste`, s.wish_count, n));
+  [[10, "Doppelt gemoppelt"], [50, "Tausch-Experte"], [100, "Bulk-Baron"]].forEach(([n, name]) => add("Organisation", name, `${n} überzählige Karten im Nebenstapel`, s.spare_total, n));
+  return A;
+}
+
+let achKnown = null, achTimer = null, achBusy = false;
+function maybeAch() { clearTimeout(achTimer); achTimer = setTimeout(checkAch, 1500); }
+async function checkAch() {                         // neue Erfolge als Hinweis einblenden (der erste Abruf nach dem Laden merkt sich nur den Stand)
+  if (achBusy) return; achBusy = true;
+  try {
+    const s = await (await fetch("/api/stats")).json(), A = achievements(s), now = A.filter(a => a.done).map(a => a.id);
+    if (achKnown) {
+      const fresh = A.filter(a => a.done && !achKnown.includes(a.id));
+      fresh.slice(0, 4).forEach((a, i) => setTimeout(() => toast("Erfolg freigeschaltet", `${a.name}: ${a.desc}`), i * 900));
+      if (fresh.length) sfx("ach");
+    }
+    achKnown = now;
+  } catch (e) {} finally { achBusy = false; }
+}
+
+async function openStats() {
+  $("#stmodal").style.display = "block"; $("#stbody").textContent = "Lade Statistik …";
+  let s;
+  try { s = await (await fetch("/api/stats")).json(); } catch (e) { $("#stbody").textContent = "Statistik konnte nicht geladen werden."; return; }
+  const ach = achievements(s), got = ach.filter(a => a.done).length, nl = s.langs.reduce((a, l) => a + l.n, 0);
+  const cats = [...new Set(ach.map(a => a.cat))];
+  const achHtml = a => `<div class="ach ${a.done ? "done" : "lock"}"><b>${a.name}</b><small>${a.desc}</small><span class="abar"><i style="width:${a.done ? 100 : pc(a.cur, a.goal)}%"></i></span><small class="acnt">${a.done ? "Geschafft" : `${a.fmt(Math.round(a.cur * 100) / 100)} / ${a.fmt(a.goal)}`}</small></div>`;
+  const mv = c => `<div class="mc">${badge(c.lang)}${cardImg(c)}<b>${c.name}</b><small>${c.set_name} ${c.local_id}</small><span class="price">${eur(c.price)}</span><small>vorher ${eur(c.price_old)}</small></div>`;
+  const day = new Date(), seed = day.getFullYear() * 10000 + (day.getMonth() + 1) * 100 + day.getDate(), pid = (seed * 7919) % s.species + 1;
+  $("#stbody").innerHTML = `
+    <div id="potd" class="potd"><small>Pokémon des Tages wird geladen …</small></div>
+    <div class="sumgrid" style="margin-top:12px">
+      <div class="sum"><b>${s.caught} / ${s.species}</b><small>Pokémon im Binder (${pc(s.caught, s.species)} %)</small></div>
+      <div class="sum"><b>${s.cards}</b><small>Karten insgesamt, davon ${s.distinct} verschiedene</small></div>
+      <div class="sum"><b>${eur(s.value_binder)}</b><small>Wert des Binders</small></div>
+      <div class="sum"><b>${eur(s.value_all)}</b><small>Wert aller Karten</small></div>
+      <div class="sum"><b>${s.streak_now} Tage</b><small>aktuelle Serie (Rekord ${s.streak_best})</small></div>
+      <div class="sum"><b>${s.sets_owned}</b><small>verschiedene Sets, ${s.sets_complete.length} komplett</small></div>
+    </div>
+    <h3 class="ser">Generationen</h3>
+    ${s.gens.map(g => `<div class="grow"><span class="gl">Gen ${g.gen} · ${g.region}</span>${bar(pc(g.caught, g.total))}<span class="gn">${g.caught}/${g.total}</span></div>`).join("")}
+    <h3 class="ser">Fullart im Binder</h3>
+    <div class="grow"><span class="gl">Fullart</span>${bar(pc(s.fullart, s.caught))}<span class="gn">${s.fullart}/${s.caught}</span></div>
+    <p><small>Als Fullart zählen Seltenheiten wie Ultra Selten, Illustration, Besondere Illustration und Hyperselten.</small></p>
+    <h3 class="ser">Sprachen</h3>
+    ${s.langs.map(l => `<div class="grow"><span class="gl">${LANGN[l.lang] || l.lang}</span>${bar(pc(l.n, nl))}<span class="gn">${l.n}</span></div>`).join("") || "<p>Noch keine Karten.</p>"}
+    <h3 class="ser">Häufigste Seltenheiten</h3>
+    ${s.rarities.map(r => `<div class="grow"><span class="gl">${r.rarity}</span>${bar(pc(r.n, s.rarities[0].n))}<span class="gn">${r.n}</span></div>`).join("") || "<p>Noch keine Karten.</p>"}
+    <h3 class="ser">Wertvollste Sets</h3>
+    ${s.value_sets.map(v => `<div class="grow"><span class="gl">${v.set_name}</span>${bar(pc(v.value, s.value_sets[0].value))}<span class="gn" style="width:110px">${eur(v.value)}</span></div>`).join("") || "<p>Noch keine Preise.</p>"}
+    <h3 class="ser">Wertverlauf</h3>${lineChart(s.history)}
+    <h3 class="ser">Preisbewegung seit der letzten Aktualisierung</h3>
+    ${s.movers.up.length || s.movers.down.length ? `<p><small>Gewinner</small></p><div class="topg">${s.movers.up.map(mv).join("") || "<p>–</p>"}</div><p><small>Verlierer</small></p><div class="topg">${s.movers.down.map(mv).join("") || "<p>–</p>"}</div>`
+      : "<p><small>Noch keine Bewegung. Nach der zweiten Preis-Aktualisierung siehst du hier Gewinner und Verlierer.</small></p>"}
+    <h3 class="ser">Teuerste Karten</h3>
+    <div class="topg">${s.top.map(c => `<div class="mc">${badge(c.lang, c.in_binder)}${cardImg(c)}<b>${c.dex_name ? c.dex_name + " · " : ""}${c.name}</b><small>${c.set_name} ${c.local_id}</small><span class="price">${eur(c.price)}</span></div>`).join("") || "<p>Noch keine Preise.</p>"}</div>
+    <h3 class="ser">Erfolge (${got} von ${ach.length})</h3>
+    ${cats.map(cat => `<h4 class="achcat">${cat} (${ach.filter(a => a.cat === cat && a.done).length}/${ach.filter(a => a.cat === cat).length})</h4><div class="achgrid">${ach.filter(a => a.cat === cat).map(achHtml).join("")}</div>`).join("")}
+    <h3 class="ser">Nächstes Ziel</h3><button id="randBtn">Zufälliges fehlendes Pokémon</button>
+    <h3 class="ser">Export</h3>
+    <div class="acts"><a class="lnk" href="/api/export.csv" download>Sammlung als CSV</a><a class="lnk" href="/api/export.csv?kind=missing" download>Fehlende Pokémon als CSV</a><a class="lnk" href="/api/backup" download>Datenbank sichern</a></div>`;
+  $("#randBtn").onclick = async () => {
+    const r = await (await fetch("/api/randommissing")).json();
+    if (!r.dex_id) return alert("Du hast schon alle Pokémon. Glückwunsch!");
+    PD.lang = "de"; PD.browse = false;
+    const d = await (await fetch(`/api/dexcards?dex_id=${r.dex_id}&lang=de`)).json();
+    if (d.status !== "ok") return alert(d.msg || "Kartenliste nicht abrufbar.");
+    $("#stmodal").style.display = "none"; renderDex(d, "Dein Zufallsziel:");
+  };
+  try {                                              // Pokémon des Tages (für alle Geräte am selben Tag dasselbe)
+    const i = await (await fetch(`/api/dexinfo?id=${pid}`)).json(), r = rows.find(x => x.id === pid);
+    $("#potd").innerHTML = `<img src="${art(pid)}" alt="${i.name}"><div style="flex:1;min-width:200px"><b style="font:400 10px/1.5 var(--px);color:var(--yel)">Pokémon des Tages · Nr. ${pad(pid)}</b>
+      <p style="color:#fff;font-size:24px">${i.name}${i.genus ? " · " + i.genus : ""}</p><p>${i.text || ""}</p>
+      <p>${r && r.cid ? "Liegt schon in deinem Binder." : "Fehlt dir noch."}</p><button class="alt" id="potdBtn">Karten ansehen</button></div>`;
+    $("#potdBtn").onclick = () => { $("#stmodal").style.display = "none"; openBrowse(pid); };
+  } catch (e) { $("#potd").remove(); }
+}
+
+/* Wunschliste und Tauschliste */
+const cmUrl = w => "https://www.cardmarket.com/de/Pokemon/Products/Search?searchString=" + encodeURIComponent(`${w.name} ${w.local_id}`);
+const SH = {de: "DE", en: "EN", ja: "JP"};
+
+function tradeText(t) {
+  const line = (c, n) => `- ${n > 1 ? n + "× " : ""}${c.name}, ${c.set_name} ${c.local_id} (${SH[c.lang] || ""})${c.price != null ? ", ca. " + eur(c.price) : ""}`;
+  return `Ich biete:\n${t.offer.map(o => line(o, o.spare)).join("\n") || "- (nichts)"}\n\nIch suche:\n${t.wishes.map(w => line(w, 1)).join("\n") || "- (nichts)"}`;
+}
+
+async function chooseCard(lang, tid, after) {                  // Auswahl-Dialog für eine Karte (z. B. von der Wunschliste)
+  let r;
+  try { r = await (await fetch(`/api/cardinfo?lang=${lang}&id=${encodeURIComponent(tid)}`)).json(); }
+  catch (e) { return alert("Karte konnte nicht geladen werden."); }
+  if (r.status !== "ok") return alert(r.msg || "Karte konnte nicht geladen werden.");
+  renderChoice(r.card, $("#cbody"), {
+    close: () => $("#cmodal").style.display = "none",
+    done: async () => { $("#cmodal").style.display = "none"; load(); if (after) await after(); },
+  });
+  $("#cmodal").style.display = "block";
+}
+
+async function openTrade() {
+  $("#tmodal").style.display = "block"; $("#tbody").textContent = "Lade …";
+  let t;
+  try { t = await (await fetch("/api/trade")).json(); } catch (e) { $("#tbody").textContent = "Konnte nicht geladen werden."; return; }
+  const wt = t.wishes.reduce((a, w) => a + (w.price || 0), 0), ot = t.offer.reduce((a, o) => a + (o.price || 0) * o.spare, 0), on = t.offer.reduce((a, o) => a + o.spare, 0);
+  $("#tbody").innerHTML = `
+    <h3 class="ser">Ich suche (Wunschliste): ${t.wishes.length} Karten, ${eur(wt)}</h3>
+    ${t.wishes.length ? `<div class="topg">${t.wishes.map(w => `<div class="mc">${badge(w.lang)}${cardImg(w)}<b>${w.dex_name ? w.dex_name + " · " : ""}${w.name}</b>
+      <small>${w.set_name} ${w.local_id} · ${w.rarity || "–"}</small><span class="price">${eur(w.price)}</span>${w.price_old != null && w.price != null && Math.abs(w.price - w.price_old) > 0.004 ? `<span class="chg ${w.price < w.price_old ? "good" : "bad"}" title="vorher ${eur(w.price_old)}">${TRI(w.price > w.price_old)}${w.price < w.price_old ? "billiger" : "teurer"}</span>` : ""}
+      <div class="acts"><button data-w="have" data-id="${w.card_id}" data-l="${w.lang}">Hab ich jetzt</button><a class="lnk" target="_blank" rel="noopener" href="${cmUrl(w)}">Cardmarket</a><button class="alt" data-w="del" data-id="${w.card_id}">Entfernen</button></div></div>`).join("")}</div>`
+      : '<p>Noch nichts auf der Wunschliste. Im Auswahl-Dialog einer Karte (Sets-Ansicht, Durchlauf) gibt es den Knopf "Auf die Wunschliste".</p>'}
+    <h3 class="ser">Ich biete (Doppelte und Nebenstapel): ${on} Karten, ${eur(ot)}</h3>
+    ${t.offer.length ? `<div class="topg">${t.offer.map(o => `<div class="mc">${badge(o.lang)}${cardImg(o)}<b>${o.spare > 1 ? o.spare + "× " : ""}${o.name}</b><small>${o.set_name} ${o.local_id}</small><span class="price">${eur(o.price)}</span></div>`).join("")}</div>` : "<p>Nichts übrig: keine doppelten Karten und der Nebenstapel ist leer.</p>"}
+    <h3 class="ser">Als Text zum Verschicken</h3>
+    <textarea id="ttext" readonly rows="8"></textarea>
+    <div class="acts"><button id="tcopy">Text kopieren</button></div>`;
+  $("#ttext").value = tradeText(t);
+  $("#tcopy").onclick = async () => {
+    const ta = $("#ttext"); ta.select();
+    try { await navigator.clipboard.writeText(ta.value); } catch (e) { document.execCommand("copy"); }
+    $("#tcopy").textContent = "Kopiert!"; setTimeout(() => $("#tcopy").textContent = "Text kopieren", 1500);
+  };
+}
+
+/* Lightbox: Karte groß ansehen */
+function openLb(src, cap) {
+  const img = $("#lbimg");
+  img.onerror = () => { img.onerror = null; img.src = src; };
+  img.src = src.replace("/low.webp", "/high.webp").replace("_200w.jpg", "_in_1000x1000.jpg");
+  $("#lbcap").textContent = cap || "";
+  $("#lb").style.display = "flex";
+}
+$("#lb").onclick = () => $("#lb").style.display = "none";
+document.addEventListener("click", e => { const im = e.target.closest(".mc img, figure img"); if (im && im.src) openLb(im.src, im.alt); });
+
+$("#statBtn").onclick = openStats;
+$("#stclose").onclick = () => $("#stmodal").style.display = "none";
+$("#tradeBtn").onclick = openTrade;
+$("#tclose").onclick = () => $("#tmodal").style.display = "none";
+$("#tbody").onclick = async e => {
+  const b = e.target.closest("button[data-w]"); if (!b) return;
+  if (b.dataset.w === "del") { await post("/api/wish", {action: "remove", card_id: b.dataset.id}); return openTrade(); }
+  const id = b.dataset.id;
+  chooseCard(b.dataset.l, id.includes(":") ? id.split(":")[1] : id, openTrade);
+};
+
+/* Kamera-Scan: automatisch mitlesen, Ecken einzeln hochskaliert lesen, scharfes Bild wählen, zweimal dieselbe Nummer = erkannt */
+let stream = null, track = null, wNum = null, wLang = null, scanning = false, loopT = null;
+const AS = {key: "", n: 0, blocked: ""};          // Zustand des automatischen Scans
+let LAST = {sx: 0, inv: 0, bin: 0};               // zuletzt erfolgreiche Variante wird zuerst probiert
+let RAW = [];                                     // Rohtext der letzten Leseversuche (Diagnose)
+
+async function startCam(deviceId) {
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  const video = {width: {ideal: 1920}, height: {ideal: 1080}};
+  if (deviceId) video.deviceId = {exact: deviceId}; else video.facingMode = {ideal: "environment"};  // Rückkamera bevorzugen
+  try { stream = await navigator.mediaDevices.getUserMedia({video}); }
+  catch (e) { return show("Kamera nicht verfügbar: " + e.message); }
+  $("#video").srcObject = stream;
+  track = stream.getVideoTracks()[0];
+  const cap = track.getCapabilities ? track.getCapabilities() : {};
+  try { if (cap.focusMode && cap.focusMode.includes("continuous")) await track.applyConstraints({advanced: [{focusMode: "continuous"}]}); } catch (e) {}
+  $("#camTools").style.display = cap.zoom || cap.torch ? "flex" : "none";       // Zoom und Licht gibt es nur auf manchen Geräten (z. B. Android)
+  $("#zoomL").style.display = cap.zoom ? "" : "none";
+  $("#torchBtn").style.display = cap.torch ? "" : "none";
+  if (cap.zoom) { const z = $("#zoomR"); z.min = cap.zoom.min; z.max = cap.zoom.max; z.step = cap.zoom.step || 0.1; z.value = (track.getSettings().zoom) || cap.zoom.min; }
+  const cur = track.getSettings().deviceId;
+  const devs = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === "videoinput");
+  $("#cams").innerHTML = devs.map((d, i) => `<option value="${d.deviceId}" ${d.deviceId === cur ? "selected" : ""}>${d.label || "Kamera " + (i + 1)}</option>`).join("");
+}
+function stopCam() { if (stream) stream.getTracks().forEach(t => t.stop()); stream = track = null; clearTimeout(loopT); }
+
+async function ensureWorker() {                   // Texterkennung nur für Ziffern (eng): genauer und schneller als eng+deu
+  if (!wNum) {
+    $("#ocr").textContent = "Lade Texterkennung … (beim ersten Mal ein paar Sekunden)";
+    wNum = await Tesseract.createWorker("eng");
+  }
+  return wNum;
+}
+async function ocr(canvas, psm, whitelist, withLang) {
+  let w;
+  if (withLang) { if (!wLang) wLang = await Tesseract.createWorker("eng+deu"); w = wLang; } else w = await ensureWorker();
+  await w.setParameters({tessedit_pageseg_mode: psm, tessedit_char_whitelist: whitelist || ""});
+  return (await w.recognize(canvas)).data.text;
+}
+
+/* typische Verwechslungen beim Lesen von Ziffern korrigieren: O->0, I/l/|->1, S->5, B->8 ... (nur in Zahlen-Wörtern) */
+const CONF = {O: "0", o: "0", Q: "0", D: "0", I: "1", l: "1", "|": "1", "!": "1", S: "5", s: "5", B: "8", Z: "2", z: "2", g: "9", q: "9"};
+function fixDigits(text) {
+  return text.split(/\s+/).map(tok => {
+    const c = tok.replace(/[^0-9A-Za-z\/|!\\]/g, "");
+    if (c && /^[0-9OoQDIl|!SsBZzgq\/\\]*$/.test(c) && /[0-9\/\\]/.test(c)) return c.replace(/[OoQDIl|!SsBZzgq]/g, ch => CONF[ch]).replace(/\\/g, "/");
+    return tok;
+  }).join(" ");
+}
+
+function parseOne(t, dens) {
+  const slash = [...t.matchAll(/(\d{1,3})\s*\/\s*(\d{1,3})/g)];
+  const ok = slash.find(m => dens.includes(String(+m[2]))) || slash.find(m => DENS.includes(+m[2]));
+  if (ok) return {num: ok[1], den: String(+ok[2])};
+  const fuzzy = (list, sep) => {                       // "/" evtl. als 7, 1, I, | gelesen
+    for (const d of list) {
+      const m = t.match(new RegExp(`(\\d{1,3})\\s*[/|Il!71]${sep}\\s*0*${d}(?!\\d)`));
+      if (m && +m[1] > 0) return {num: m[1], den: String(d)};
+    }
+  };
+  const f = (dens.length && fuzzy(dens, "?")) || fuzzy(DENS.filter(d => d >= 60), "");
+  return f || (slash.length ? {num: slash[0][1], den: String(+slash[0][2])} : null);
+}
+const isStrong = (r, dens) => !!r && (dens.includes(r.den) || DENS.includes(+r.den) || (!DENS.length && +r.den >= 20));   // Nenner = bekannte Set-Größe
+function parseNumber(text, dens) {
+  const a = parseOne(fixDigits(text).replace(/\s+/g, " "), dens);
+  if (isStrong(a, dens)) return a;
+  const b = parseOne(text.replace(/\s+/g, " "), dens);
+  return isStrong(b, dens) ? b : (a || b);
+}
+
+function sharp(c) {                                   // grobe Schärfemessung: Helligkeitsunterschiede nebeneinanderliegender Pixel
+  const w = 480, h = Math.max(1, Math.round(w * c.height / c.width)), t = document.createElement("canvas");
+  t.width = w; t.height = h;
+  const x = t.getContext("2d"); x.drawImage(c, 0, 0, w, h);
+  const p = x.getImageData(0, 0, w, h).data; let s = 0;
+  for (let i = 4; i < p.length; i += 4) s += Math.abs(p[i] - p[i - 4]);
+  return s;
+}
+async function bestFrame(v) {                         // drei Bilder aufnehmen, das schärfste nehmen (gegen Wackeln)
+  const h = Math.max(40, Math.round(v.videoHeight * $("#zone").value / 100));
+  let best = null, bs = -1;
+  for (let i = 0; i < 3; i++) {
+    const c = document.createElement("canvas"); c.width = v.videoWidth; c.height = h;
+    c.getContext("2d").drawImage(v, 0, v.videoHeight - h, v.videoWidth, h, 0, 0, v.videoWidth, h);
+    const s = sharp(c); if (s > bs) { bs = s; best = c; }
+    if (i < 2) await new Promise(r => setTimeout(r, 90));
+  }
+  return best;
+}
+
+function binarizeData(p, w, h) {                      // lokale Schwelle: deutlich dunkler als die Umgebung = Schrift (Rest weiß), gegen Verläufe, Glanz und Hüllen-Muster
+  const W1 = w + 1, I = new Float64Array(W1 * (h + 1));
+  for (let y = 0; y < h; y++) {
+    let row = 0;
+    for (let x = 0; x < w; x++) { row += p[(y * w + x) * 4]; I[(y + 1) * W1 + x + 1] = I[y * W1 + x + 1] + row; }
+  }
+  const r = Math.min(90, Math.max(25, Math.round(h / 4))), out = new Uint8Array(w * h);
+  for (let y = 0; y < h; y++) {
+    const y0 = Math.max(0, y - r), y1 = Math.min(h, y + r + 1);
+    for (let x = 0; x < w; x++) {
+      const x0 = Math.max(0, x - r), x1 = Math.min(w, x + r + 1);
+      const mean = (I[y1 * W1 + x1] - I[y0 * W1 + x1] - I[y1 * W1 + x0] + I[y0 * W1 + x0]) / ((x1 - x0) * (y1 - y0));
+      out[y * w + x] = p[(y * w + x) * 4] < mean * 0.88 ? 0 : 255;
+    }
+  }
+  for (let i = 0; i < out.length; i++) { p[i * 4] = p[i * 4 + 1] = p[i * 4 + 2] = out[i]; }
+}
+function prepCanvas(src, sx, sw, invert, bin) {       // Ausschnitt hochskalieren, Graustufen, Kontrast automatisch spreizen, optional invertieren / binarisieren
+  const k = Math.min(4, 1200 / sw), c = document.createElement("canvas");
+  c.width = Math.round(sw * k); c.height = Math.round(src.height * k);
+  const ctx = c.getContext("2d"); ctx.imageSmoothingQuality = "high";
+  ctx.drawImage(src, sx, 0, sw, src.height, 0, 0, c.width, c.height);
+  const d = ctx.getImageData(0, 0, c.width, c.height), p = d.data, hist = new Uint32Array(256), n = c.width * c.height;
+  for (let i = 0; i < p.length; i += 4) { const g = (0.299 * p[i] + 0.587 * p[i + 1] + 0.114 * p[i + 2]) | 0; p[i] = g; hist[g]++; }
+  let acc = 0, lo = 0, hi = 255;
+  for (let g = 0; g < 256; g++) { acc += hist[g]; if (acc >= n * 0.02) { lo = g; break; } }
+  acc = 0;
+  for (let g = 255; g >= 0; g--) { acc += hist[g]; if (acc >= n * 0.02) { hi = g; break; } }
+  const span = Math.max(40, hi - lo);
+  for (let i = 0; i < p.length; i += 4) {
+    let g = (p[i] - lo) * 255 / span; g = g < 0 ? 0 : g > 255 ? 255 : g;
+    p[i] = p[i + 1] = p[i + 2] = invert ? 255 - g : g;
+  }
+  if (bin) binarizeData(p, c.width, c.height);
+  ctx.putImageData(d, 0, 0);
+  return c;
+}
+function showCrop(c) { const o = $("#crop"); o.width = c.width; o.height = c.height; o.getContext("2d").drawImage(c, 0, 0); }
+
+async function readNumber(strip, dens, deep) {        // links und rechts unten getrennt, normal / invertiert / binarisiert, nur Ziffern und "/"
+  const sw = Math.round(strip.width * 0.5), starts = [0, strip.width - sw];
+  const order = [];
+  for (const bin of [0, 1]) for (const inv of [0, 1]) for (const sx of [0, 1]) order.push({sx, inv, bin});
+  order.sort((a, b) => (b.sx === LAST.sx && b.inv === LAST.inv && b.bin === LAST.bin) - (a.sx === LAST.sx && a.inv === LAST.inv && a.bin === LAST.bin));
+  let weak = null; RAW = [];
+  for (const v of order) {
+    const c = prepCanvas(strip, starts[v.sx], sw, !!v.inv, !!v.bin); showCrop(c);
+    for (const wl of deep ? ["0123456789/", ""] : ["0123456789/"]) {
+      const text = await ocr(c, "11", wl);
+      RAW.push(`${v.sx ? "rechts" : "links"}${v.inv ? " invers" : ""}${v.bin ? " bin" : ""}${wl ? "" : " frei"}: ${text.replace(/\s+/g, " ").trim().slice(0, 50) || "–"}`);
+      const r = parseNumber(text, dens);
+      if (isStrong(r, dens)) { LAST = v; return {...r, strong: true}; }
+      if (r && !weak) weak = r;
+    }
+  }
+  return weak ? {...weak, strong: false} : {};
+}
+function showRaw() { $("#raw").textContent = RAW.slice(-10).join("\n"); }
+
+function autoDecide(st, r) {                          // zweimal dieselbe Nummer in Folge = erkannt; dieselbe Karte nicht doppelt
+  if (!r.num) { st.key = ""; st.n = 0; st.blocked = ""; return "none"; }   // keine Nummer im Bild: Karte wurde weggenommen
+  if (!r.strong) { st.key = ""; st.n = 0; return "weak"; }
+  const key = `${r.num}/${r.den}`;
+  if (key === st.blocked) return "blocked";
+  st.n = st.key === key ? st.n + 1 : 1; st.key = key;
+  if (st.n >= 2) { st.blocked = key; st.key = ""; st.n = 0; return "accept"; }
+  return "wait";
+}
+
+function setCtx() {
+  const chosen = setId() ? SETS[setId()] : null;
+  return {chosen, dens: chosen ? [chosen.official, chosen.total].filter(Boolean).map(x => String(+x)) : []};
+}
+const pendingUI = () => ["#modal", "#smodal", "#pmodal", "#cmodal", "#stmodal", "#tmodal", "#bmodal", "#qmodal", "#sumodal", "#aimodal", "#gmodal", "#vmodal"].some(id => $(id).style.display === "block")
+  || !!$("#msg").querySelector("[data-i],[data-act],#rep");        // wartet gerade eine Auswahl auf dich?
+
+async function accept(r, strip, ctx) {
+  $("#num").value = r.num;
+  $("#ocr").textContent = `Erkannt: ${r.num}/${r.den}`;
+  if (navigator.vibrate) navigator.vibrate(60);
+  FROM_SCAN = true; sfx("scan");
+  let lt = "";
+  if ($("#lang").value === "auto") { try { lt = await ocr(prepCanvas(strip, 0, strip.width, false, false), "11", "", true); } catch (e) {} }   // Kartentext für die Spracherkennung
+  await detect(r.num, r.den, lt, !!ctx.chosen && ctx.dens.includes(r.den));
+}
+
+async function autoStep() {
+  const v = $("#video");
+  if (!stream || !$("#autoScan").checked || scanning || document.hidden || pendingUI() || !v.videoWidth) return;
+  scanning = true;
+  try {
+    const mv = motion(), now = Date.now();                // Stillstand erkennen (für die KI-Hilfe im Modus "Automatisch")
+    if (mv > 14) { AIS.fired = false; AIS.stillSince = 0; } else if (mv < 8) AIS.stillSince = AIS.stillSince || now; else AIS.stillSince = 0;
+    const ctx = setCtx(), strip = await bestFrame(v), r = await readNumber(strip, ctx.dens, false);
+    showRaw();
+    const act = autoDecide(AS, r);
+    $("#ocr").textContent = {none: "Suche Kartennummer …", weak: `Unsicher gelesen: ${r.num}/${r.den}, bitte ruhiger halten oder näher ran`,
+      blocked: "Karte erkannt. Für die nächste Karte die Karte kurz aus dem Bild nehmen.", wait: `Gelesen: ${r.num}/${r.den}, noch einmal bestätigen …`, accept: ""}[act];
+    if (act === "accept") await accept(r, strip, ctx);
+    else if ((act === "none" || act === "weak") && aiMode() === "auto" && !AIS.fired && AIS.stillSince && Date.now() - AIS.stillSince > 2500) {
+      AIS.fired = true; await aiScan();                   // Bild liegt ruhig, Texterkennung hat nichts gefunden: einmal die KI fragen
+    }
+  } catch (e) { $("#ocr").textContent = "Lesefehler: " + e.message; }
+  finally { scanning = false; }
+}
+function loop() {
+  clearTimeout(loopT);
+  if (!stream) return;
+  autoStep().finally(() => { loopT = setTimeout(loop, 250); });
+}
+
+/* ---------- KI-Hilfe (Ollama auf dem PC oder Google Gemini) ---------- */
+let AIC = {provider: "", configured: false};
+const AIS = {fired: false, prev: null, stillSince: 0, busy: false, cv: null};
+function aiMode() { return AIC.configured ? $("#aiMode").value : "off"; }
+function updateAIUi() {
+  $("#aiMode").disabled = !AIC.configured;
+  $("#aiState").textContent = AIC.configured ? `Aktiv: ${AIC.provider === "ollama" ? "Ollama · " + AIC.ollama_model : "Gemini · " + AIC.gemini_model}` : "Nicht eingerichtet";
+  if (!AIC.configured) $("#aiMode").value = "off";
+  else if ($("#aiMode").value === "off") $("#aiMode").value = localStorage.getItem("aiMode") || "manual";
+}
+async function loadAI() { try { AIC = await (await fetch("/api/ai/config")).json(); } catch (e) {} updateAIUi(); }
+function grabFrame(maxW = 1280) {                     // ganzes Kamerabild als JPEG (für die KI)
+  const v = $("#video"), k = Math.min(1, maxW / v.videoWidth), c = document.createElement("canvas");
+  c.width = Math.round(v.videoWidth * k); c.height = Math.round(v.videoHeight * k);
+  c.getContext("2d").drawImage(v, 0, 0, c.width, c.height);
+  return c.toDataURL("image/jpeg", 0.85);
+}
+function motion() {                                   // Bewegung im Bild: mittlere Helligkeitsänderung seit dem letzten Aufruf (kleine Vorschau)
+  const v = $("#video"); if (!v.videoWidth) return 99;
+  const c = AIS.cv || (AIS.cv = document.createElement("canvas")); c.width = 48; c.height = 36;
+  const x = c.getContext("2d", {willReadFrequently: true}); x.drawImage(v, 0, 0, 48, 36);
+  const p = x.getImageData(0, 0, 48, 36).data, g = new Uint8Array(48 * 36);
+  for (let i = 0; i < g.length; i++) g[i] = (p[i * 4] * 0.3 + p[i * 4 + 1] * 0.59 + p[i * 4 + 2] * 0.11) | 0;
+  let d = 99;
+  if (AIS.prev) { d = 0; for (let i = 0; i < g.length; i++) d += Math.abs(g[i] - AIS.prev[i]); d /= g.length; }
+  AIS.prev = g; return d;
+}
+async function aiScan() {                             // Karte per KI lesen; true, wenn Treffer angezeigt wurden
+  if (AIS.busy) return false;
+  AIS.busy = true; $("#ocr").textContent = "KI liest die Karte … (beim ersten Mal kann das etwas dauern)";
+  try {
+    const r = await post("/api/ai-scan", {image: grabFrame(), lang: $("#lang").value});
+    if (!r.ok) { $("#ocr").textContent = r.msg || "KI-Erkennung fehlgeschlagen."; return false; }
+    const i = r.info, lab = `${i.name || "?"} ${i.number || ""}${i.total ? "/" + i.total : ""}`;
+    RAW.push("KI: " + lab + (i.set_code ? " " + i.set_code : "")); showRaw();
+    if (!i.is_card) { $("#ocr").textContent = "Die KI sieht keine Karte im Bild."; return false; }
+    if (!r.cards.length) { $("#ocr").textContent = `Die KI hat "${lab}" gelesen, aber keine passende Karte gefunden.`; return false; }
+    $("#num").value = i.number; $("#ocr").textContent = "KI erkannt: " + lab;
+    if (navigator.vibrate) navigator.vibrate(60);
+    FROM_SCAN = true; sfx("scan");
+    AS.blocked = `${i.number}/${i.total}`; AS.key = ""; AS.n = 0;
+    showCandidates(r.cards);
+    return true;
+  } catch (e) { $("#ocr").textContent = "KI-Erkennung fehlgeschlagen: " + e.message; return false; }
+  finally { AIS.busy = false; }
+}
+
+async function scan() {                               // sofort scannen (Knopf, Leertaste, Tippen aufs Bild): gründlicher als der automatische Scan
+  const v = $("#video");
+  if (scanning || !stream || !v.videoWidth) return;
+  scanning = true; $("#ocr").textContent = "Lese …";
+  try {
+    if (aiMode() !== "off" && await aiScan()) return;     // KI zuerst (genauer), sonst die lokale Texterkennung
+    const ctx = setCtx(), strip = await bestFrame(v), r = await readNumber(strip, ctx.dens, true);
+    showRaw();
+    if (!r.num) return show("Keine Kartennummer erkannt. Karte näher ranhalten (ca. 15 bis 20 cm), Licht seitlich statt von vorn, bei Spiegelungen die Karte leicht kippen, den gelben Rahmen über die Nummer legen oder die Nummer manuell eintippen. Mit \"Diagnose anzeigen\" siehst du, was gelesen wird.");
+    AS.blocked = `${r.num}/${r.den}`; AS.key = ""; AS.n = 0;
+    await accept(r, strip, ctx);
+  } catch (e) { $("#ocr").textContent = "Lesefehler: " + e.message; }
+  finally { scanning = false; }
+}
+
+$("#camBtn").onclick = () => {
+  const open = $("#cam").style.display === "flex";
+  $("#cam").style.display = open ? "none" : "flex";
+  $("#camBtn").classList.toggle("on", !open);
+  document.body.classList.toggle("camon", !open);
+  AS.key = ""; AS.n = 0; AS.blocked = "";
+  if (open) return stopCam();
+  startCam().then(() => { ensureWorker().then(() => { $("#ocr").textContent = "Suche Kartennummer …"; loop(); }).catch(e => $("#ocr").textContent = "Texterkennung konnte nicht geladen werden: " + e.message); });
+};
+$("#zone").oninput = e => $("#zoneBox").style.height = e.target.value + "%";
+$("#dbg").onchange = e => { $("#cam").classList.toggle("dbg", e.target.checked); };
+$("#zoomR").oninput = e => { if (track) track.applyConstraints({advanced: [{zoom: +e.target.value}]}).catch(() => {}); };
+let torchOn = false;
+$("#torchBtn").onclick = () => { torchOn = !torchOn; if (track) track.applyConstraints({advanced: [{torch: torchOn}]}).catch(() => {}); };
+$("#cams").onchange = e => startCam(e.target.value);
+$("#scan").onclick = scan;
+$("#video").onclick = scan;
+document.addEventListener("keydown", e => {
+  if (e.code === "Space" && stream && !["INPUT", "SELECT", "BUTTON"].includes(document.activeElement.tagName)) { e.preventDefault(); scan(); }
+});
+
+const closeMenu = () => { $("#menuWrap").classList.remove("open"); $("#menuBtn").setAttribute("aria-expanded", "false"); };
+$("#menuBtn").onclick = () => { const o = $("#menuWrap").classList.toggle("open"); $("#menuBtn").setAttribute("aria-expanded", String(o)); };
+$("#menuClose").onclick = closeMenu;
+for (const id of ["#setsBtn", "#side", "#tradeBtn", "#statBtn", "#prices", "#pdGo"]) $(id).addEventListener("click", closeMenu);   // nach der Auswahl Menü zuklappen (nur auf dem Handy sichtbar)
+
+function aiFill() {
+  $("#aiProv").value = AIC.provider || ""; $("#aiUrl").value = AIC.url || ""; $("#aiOModel").value = AIC.ollama_model || ""; $("#aiGModel").value = AIC.gemini_model || "";
+  $("#aiKey").value = ""; $("#aiKey").placeholder = AIC.has_key ? "gespeichert (leer lassen = behalten)" : "aus Google AI Studio";
+  $("#aiOllama").style.display = $("#aiProv").value === "ollama" ? "" : "none"; $("#aiGemini").style.display = $("#aiProv").value === "gemini" ? "" : "none"; $("#aiMsg").textContent = "";
+}
+const aiForm = () => ({provider: $("#aiProv").value, url: $("#aiUrl").value.trim(), ollama_model: $("#aiOModel").value.trim(), gemini_model: $("#aiGModel").value.trim(), key: $("#aiKey").value.trim()});
+$("#aiCfg").onclick = () => { aiFill(); $("#aimodal").style.display = "block"; };
+$("#aiclose").onclick = () => $("#aimodal").style.display = "none";
+$("#aiProv").onchange = () => { $("#aiOllama").style.display = $("#aiProv").value === "ollama" ? "" : "none"; $("#aiGemini").style.display = $("#aiProv").value === "gemini" ? "" : "none"; };
+$("#aiTest").onclick = async () => { $("#aiMsg").textContent = "Teste die Verbindung …"; const r = await post("/api/ai/test", aiForm()); $("#aiMsg").textContent = (r.ok ? "In Ordnung: " : "Problem: ") + r.msg; };
+$("#aiSave").onclick = async () => {
+  AIC = await post("/api/ai/config", aiForm()); updateAIUi(); aiFill();
+  $("#aiMsg").textContent = AIC.configured ? "Gespeichert. Die KI-Hilfe ist bereit." : "Gespeichert, aber die KI ist aus oder unvollständig eingerichtet.";
+};
+$("#aiMode").onchange = e => { try { localStorage.setItem("aiMode", e.target.value); } catch (er) {} };
+$("#msell").onclick = () => openSell();
+$("#mlisted").onclick = () => renderListed();
+$("#vclose").onclick = async () => { $("#vmodal").style.display = "none"; const m = $("#modal"); if (m.style.display === "block") await openCards(m.dataset.title, m.dataset.url); load(); };
+$("#gradeBtn").onclick = () => openGrade(null);
+$("#gclose").onclick = () => $("#gmodal").style.display = "none";
+$("#glistBtn").onclick = () => renderGradeList();
+$("#binderBtn").onclick = () => openBinder(1);
+$("#bclose").onclick = () => $("#bmodal").style.display = "none";
+$("#bbody").onclick = e => {
+  const nav = e.target.closest("[data-bp]"); if (nav && !nav.disabled) return openBinder(+nav.dataset.bp);
+  if (e.target.id === "bgo") { const nr = +$("#bnr").value; return openBinder(nr ? slotOf(nr).page : +$("#bpage").value); }
+  const sl = e.target.closest(".bslot"); if (!sl) return;
+  if (+sl.dataset.n) openCards(`Nr. ${pad(sl.dataset.id)} ${sl.dataset.name} · ${slotTxt(sl.dataset.id)}`, `/api/cards?dex_id=${sl.dataset.id}`);
+  else openBrowse(+sl.dataset.id);
+};
+$("#bbody").onchange = e => { if (e.target.id === "bpage") openBinder(+e.target.value); };
+$("#quizBtn").onclick = openQuiz;
+$("#qclose").onclick = () => $("#qmodal").style.display = "none";
+$("#qbody").onclick = e => {
+  const b = e.target.closest(".qopt"); if (b && QZ.cur && !QZ.cur.done) return quizAnswer(+b.dataset.id);
+  if (e.target.id === "qnext") quizNext();
+};
+$("#qbody").onchange = e => { if (e.target.id === "qgen") { QZ.gen = e.target.value; quizNext(); } };
+$("#sessBtn").onclick = async () => {
+  if (SESS && SESS.active) { const r = await post("/api/session", {action: "stop"}); sfx("ach"); load(); return showSummary(r, false); }
+  await post("/api/session", {action: "start"}); toast("Pack-Session gestartet", "Alle neuen Karten und +1 werden mitgezählt. Am Ende gibt es die Auswertung."); load();
+};
+$("#sessChip").onclick = async () => showSummary(await (await fetch("/api/session")).json(), true);
+$("#theme").onchange = e => { applyTheme(e.target.value); try { localStorage.setItem("theme", e.target.value); } catch (er) {} };
+$("#snd").onchange = e => { try { localStorage.setItem("snd", e.target.checked ? "1" : "0"); } catch (er) {} if (e.target.checked) sfx("catch"); };
+$("#bsize").onchange = e => { try { localStorage.setItem("bsize", e.target.value); } catch (er) {} };
+try {
+  const th = localStorage.getItem("theme") || "rot"; $("#theme").value = th; applyTheme(th);
+  $("#snd").checked = localStorage.getItem("snd") === "1"; $("#bsize").value = localStorage.getItem("bsize") || "9";
+} catch (e) {}
+for (const id of ["#binderBtn", "#quizBtn", "#sessBtn", "#gradeBtn"]) $(id).addEventListener("click", () => { $("#menuWrap").classList.remove("open"); $("#menuBtn").setAttribute("aria-expanded", "false"); });
+/* Lampen-Menüs am PC: rot = Extras, gelb = Einstellungen, grün = Filter & Sortierung (am Handy alles im Burger-Menü) */
+const LEDS = ["#ledRed", "#ledYel", "#ledGrn"];
+function xpOpen(id) {                                  // id = Feld, das offen sein soll (oder null = alle zu)
+  for (const l of LEDS) {
+    const b = $(l), on = b.dataset.panel === id;
+    b.setAttribute("aria-expanded", String(on)); $("#" + b.dataset.panel).classList.toggle("open", on);
+  }
+}
+for (const l of LEDS) $(l).onclick = e => { const id = e.currentTarget.dataset.panel; xpOpen($("#" + id).classList.contains("open") ? null : id); };
+$("#xpRed").onclick = e => { const b = e.target.closest("[data-proxy]"); if (!b) return; xpOpen(null); $("#" + b.dataset.proxy).click(); };
+document.addEventListener("keydown", e => { if (e.key === "Escape" && document.querySelector(".xpanel.open")) xpOpen(null); });
+
+const MOVE = {xpYel: ["#theme", "#bsize", "#snd"], xpGrn: ["#filter", "#gen", "#sort"]};   // diese Bedienelemente wandern am PC in die Felder
+const HOME = new Map();
+for (const ids of Object.values(MOVE)) for (const id of ids) {
+  const el = $(id).closest("label"), ph = document.createComment("platz " + id);
+  el.parentNode.insertBefore(ph, el); HOME.set(el, ph);
+}
+const DESK = window.matchMedia("(min-width:701px)");
+function placeCtrls() {
+  for (const [pid, ids] of Object.entries(MOVE)) for (const id of ids) {
+    const el = $(id).closest("label");
+    if (DESK.matches) $("#" + pid).appendChild(el); else { const ph = HOME.get(el); ph.parentNode.insertBefore(el, ph); }
+  }
+  if (!DESK.matches) xpOpen(null);
+}
+DESK.addEventListener ? DESK.addEventListener("change", placeCtrls) : DESK.addListener(placeCtrls);
+placeCtrls();
+const DEF = {filter: $("#filter").value, gen: $("#gen").value, sort: $("#sort").value};
+function ledState() {                                  // grüne Lampe mit Punkt, solange ein Filter oder eine andere Sortierung aktiv ist
+  const act = ["filter", "gen", "sort"].filter(k => $("#" + k).value !== DEF[k]);
+  $("#ledGrn").classList.toggle("act", !!act.length);
+  $("#ledGrn").title = act.length ? "Filter und Sortierung (aktiv: " + act.map(k => $("#" + k).selectedOptions[0].text).join(", ") + ")" : "Filter und Sortierung";
+}
+for (const k of ["filter", "gen", "sort"]) $("#" + k).addEventListener("change", ledState);
+ledState();
+$("#add").onclick = addManual;
+$("#num").addEventListener("keydown", e => { if (e.key === "Enter") addManual(); });
+$("#lang").onchange = loadSets;
+$("#filter").onchange = render;
+$("#search").oninput = render;
+load(); loadSets(); loadAI();
+fetch("/api/dens").then(r => r.json()).then(d => DENS = d).catch(() => {});
+</script>
+</body>
+</html>
