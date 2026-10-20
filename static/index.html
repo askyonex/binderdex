@@ -4,6 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Mein Pokédex</title>
+<!--I18N-->
 <link rel="manifest" href="/static/manifest.json">
 <link rel="icon" href="/favicon.ico" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32.png">
@@ -121,6 +122,9 @@ figure .noimg{width:200px}
 .mc img{width:100%;border-radius:6px;display:block}
 .mc small{display:block;color:var(--mute);font-size:18px}
 .acts{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.lglist{display:flex;flex-direction:column;gap:10px;margin:14px 0}.lglist label{display:flex;align-items:center;gap:10px;font-size:24px;color:#fff;cursor:pointer}
+.lglist input{width:22px;height:22px}.lgdef{display:flex;align-items:center;gap:10px;flex-wrap:wrap;color:#fff;margin:6px 0 10px}
+#uiLangCfg{padding:4px 10px;min-width:0}
 .acts button{padding:9px 10px;font-size:9px}
 #stools{display:none;gap:8px;flex-wrap:wrap;padding:14px 18px 0}
 #sbody{padding:14px 18px 18px}
@@ -268,7 +272,7 @@ textarea{width:100%;padding:8px 10px;font:20px/1.1 var(--vt);background:var(--na
 <body>
 <header>
   <div class="top">
-    <button class="lens" id="camBtn" title="Kamera ein/aus" aria-label="Kamera ein/aus"></button><div class="leds"><button id="ledRed" class="ledbtn lr" data-panel="xpRed" aria-expanded="false" aria-controls="xpRed" title="Extras: Statistik, Binder, Quiz, Grading-Check, Preise" aria-label="Extras öffnen oder schließen"></button><button id="ledYel" class="ledbtn ly" data-panel="xpYel" aria-expanded="false" aria-controls="xpYel" title="Einstellungen: Design, Binder-Seite, Töne" aria-label="Einstellungen öffnen oder schließen"></button><button id="ledGrn" class="ledbtn lg" data-panel="xpGrn" aria-expanded="false" aria-controls="xpGrn" title="Filter und Sortierung" aria-label="Filter und Sortierung öffnen oder schließen"></button></div>
+    <button class="lens" id="camBtn" title="Kamera ein/aus" aria-label="Kamera ein/aus"></button><div class="leds"><button id="ledRed" class="ledbtn lr" data-panel="xpRed" aria-expanded="false" aria-controls="xpRed" title="Extras: Statistik, Binder, Quiz, Grading-Check, Preise" aria-label="Extras öffnen oder schließen"></button><button id="ledYel" class="ledbtn ly" data-panel="xpYel" aria-expanded="false" aria-controls="xpYel" title="Einstellungen: Design, Binder-Seite, Töne, Sprache" aria-label="Einstellungen öffnen oder schließen"></button><button id="ledGrn" class="ledbtn lg" data-panel="xpGrn" aria-expanded="false" aria-controls="xpGrn" title="Filter und Sortierung" aria-label="Filter und Sortierung öffnen oder schließen"></button></div>
     <h1><button id="menuBtn" class="menubtn" aria-expanded="false" aria-controls="menuWrap" title="Menü öffnen oder schließen">Mein Pokédex
       <svg class="burger b1" viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M3 6h18M3 12h18M3 18h18" stroke="#fff" stroke-width="3" stroke-linecap="square" fill="none"/></svg>
       <svg class="burger b2" viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19" stroke="#fff" stroke-width="3" stroke-linecap="square" fill="none"/></svg></button></h1>
@@ -320,6 +324,7 @@ textarea{width:100%;padding:8px 10px;font:20px/1.1 var(--vt);background:var(--na
       <label class="mlab"><span>Design</span><select id="theme" title="Farbschema"><option value="rot">Design: Rot</option><option value="blau">Design: Blau</option><option value="gelb">Design: Gelb</option><option value="smaragd">Design: Smaragd</option><option value="purpur">Design: Purpur</option><option value="silber">Design: Silber</option><option value="nacht">Design: Nacht</option></select></label>
       <label class="mlab"><span>Binder-Seite</span><select id="bsize" title="Fächer pro Binder-Seite"><option value="9">Binder: 9 Fächer (3×3)</option><option value="12">Binder: 12 Fächer (4×3)</option><option value="16">Binder: 16 Fächer (4×4)</option></select></label>
       <label><input type="checkbox" id="snd"> Töne</label>
+      <label class="mlab" id="uiLangL"><span>Sprache</span><select id="uiLang" class="notranslate" title="Sprache der App"></select><button id="uiLangCfg" class="alt" title="Sprachen verwalten">…</button></label>
     </div>
     <div class="row mode">
       <div class="mh">Nach dem Hinzufügen</div>
@@ -420,13 +425,23 @@ textarea{width:100%;padding:8px 10px;font:20px/1.1 var(--vt);background:var(--na
   <div id="pinfo"></div><div id="pbody"></div>
 </div></div>
 <div id="cmodal"><div id="cbox"><div id="cbody"></div></div></div>
+<div id="lgmodal" class="ov"><div class="bx" style="max-width:560px">
+  <div class="hd"><h2 id="lgtitle">Sprachen</h2><button id="lgclose" class="alt">Schließen</button></div>
+  <div class="bd">
+    <p id="lgintro">Welche Sprachen sollen in der App zur Auswahl stehen? Oberfläche und Pokédex (Namen und Einträge) erscheinen in der gewählten Sprache. Wechseln kannst du jederzeit in den Einstellungen.</p>
+    <div id="lglist" class="lglist notranslate"></div>
+    <label class="lgdef">Standardsprache für neue Geräte <select id="lgdef" class="notranslate"></select></label>
+    <div class="acts"><button id="lgsave">Speichern</button></div>
+    <p id="lgmsg"></p>
+  </div></div></div>
 <div id="toasts" class="toasts"></div>
 <div id="lb"><img id="lbimg" alt=""><div id="lbcap"></div></div>
 <script>
 const $ = s => document.querySelector(s);
 const pad = n => String(n).padStart(3, "0");
 const art = id => `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`;
-const eur = n => n == null ? "–" : n.toLocaleString("de-DE", {style: "currency", currency: "EUR"});
+const LOC = (window.I18N && I18N.locale) || "de-DE";             // Zahlen- und Datumsformat der Oberflaechensprache
+const eur = n => n == null ? "–" : n.toLocaleString(LOC, {style: "currency", currency: "EUR"});
 const LB = {de: "DE", en: "EN", ja: "JP"};
 const CHECK = '<svg viewBox="0 0 12 12" width="14" height="14"><polyline points="2,6.5 5,9.5 10,3" fill="none" stroke="#08131d" stroke-width="2.4" stroke-linejoin="round"/></svg>';
 const starSvg = on => `<svg viewBox="0 0 24 24" width="24" height="24"><polygon points="12,2.5 14.9,9 22,9.6 16.6,14.3 18.3,21.3 12,17.6 5.7,21.3 7.4,14.3 2,9.6 9.1,9" fill="${on ? "#ffcb05" : "none"}" stroke="${on ? "#ffcb05" : "#4f8396"}" stroke-width="1.8" stroke-linejoin="round"/></svg>`;
@@ -842,7 +857,7 @@ $("#mgrid").onchange = async e => {
   const m = $("#modal"); await openCards(m.dataset.title, m.dataset.url); load();
 };
 $("#mxlsx").onclick = e => download(`/api/export-side.xlsx?spare=${$("#mspare").checked ? 1 : 0}`, e.target);
-$("#mpage").onclick = () => window.open(`/verkauf?spare=${$("#mspare").checked ? 1 : 0}`, "_blank");
+$("#mpage").onclick = () => window.open(`/verkauf?spare=${$("#mspare").checked ? 1 : 0}&ui=${window.I18N ? I18N.lang : "de"}`, "_blank");
 $("#mcsv").onclick = () => { location.href = `/api/export-side.csv?details=${$("#mdet").checked ? 1 : 0}&spare=${$("#mspare").checked ? 1 : 0}`; };
 $("#prices").onclick = async () => { await post("/api/prices/refresh", {}); load(); };
 
@@ -1639,12 +1654,13 @@ async function openStats() {
 }
 
 /* Wunschliste und Tauschliste */
-const cmUrl = w => "https://www.cardmarket.com/de/Pokemon/Products/Search?searchString=" + encodeURIComponent(`${w.name} ${w.local_id}`);
+const UIL = window.I18N ? I18N.lang : "de", TX = s => window.I18N ? I18N.t(s) : s;   // Text ausserhalb der Seite (Textfeld, Zwischenablage) selbst uebersetzen
+const cmUrl = w => `https://www.cardmarket.com/${UIL}/Pokemon/Products/Search?searchString=` + encodeURIComponent(`${w.name} ${w.local_id}`);
 const SH = {de: "DE", en: "EN", ja: "JP"};
 
 function tradeText(t) {
-  const line = (c, n) => `- ${n > 1 ? n + "× " : ""}${c.name}, ${c.set_name} ${c.local_id} (${SH[c.lang] || ""})${c.price != null ? ", ca. " + eur(c.price) : ""}`;
-  return `Ich biete:\n${t.offer.map(o => line(o, o.spare)).join("\n") || "- (nichts)"}\n\nIch suche:\n${t.wishes.map(w => line(w, 1)).join("\n") || "- (nichts)"}`;
+  const line = (c, n) => `- ${n > 1 ? n + "× " : ""}${c.name}, ${c.set_name} ${c.local_id} (${SH[c.lang] || ""})${c.price != null ? TX(", ca.") + " " + eur(c.price) : ""}`;
+  return `${TX("Ich biete:")}\n${t.offer.map(o => line(o, o.spare)).join("\n") || TX("- (nichts)")}\n\n${TX("Ich suche:")}\n${t.wishes.map(w => line(w, 1)).join("\n") || TX("- (nichts)")}`;
 }
 
 async function chooseCard(lang, tid, after) {                  // Auswahl-Dialog für eine Karte (z. B. von der Wunschliste)
@@ -2058,7 +2074,7 @@ for (const l of LEDS) $(l).onclick = e => { const id = e.currentTarget.dataset.p
 $("#xpRed").onclick = e => { const b = e.target.closest("[data-proxy]"); if (!b) return; xpOpen(null); $("#" + b.dataset.proxy).click(); };
 document.addEventListener("keydown", e => { if (e.key === "Escape" && document.querySelector(".xpanel.open")) xpOpen(null); });
 
-const MOVE = {xpYel: ["#theme", "#bsize", "#snd"], xpGrn: ["#filter", "#gen", "#sort"]};   // diese Bedienelemente wandern am PC in die Felder
+const MOVE = {xpYel: ["#theme", "#bsize", "#snd", "#uiLang"], xpGrn: ["#filter", "#gen", "#sort"]};   // diese Bedienelemente wandern am PC in die Felder
 const HOME = new Map();
 for (const ids of Object.values(MOVE)) for (const id of ids) {
   const el = $(id).closest("label"), ph = document.createComment("platz " + id);
@@ -2087,6 +2103,37 @@ $("#num").addEventListener("keydown", e => { if (e.key === "Enter") addManual();
 $("#lang").onchange = loadSets;
 $("#filter").onchange = render;
 $("#search").oninput = render;
+/* ---------- Sprache der App (Oberfläche + Pokédex) ---------- */
+function langUI() {
+  const L = window.I18N; if (!L) { $("#uiLangL").style.display = "none"; return; }
+  $("#uiLang").innerHTML = L.all.filter(l => L.langs.includes(l)).map(l => `<option value="${l}"${l === L.lang ? " selected" : ""}>${L.names[l]}</option>`).join("");
+  $("#uiLang").onchange = e => L.setLang(e.target.value);
+  $("#uiLangCfg").onclick = () => openLangs(false);
+  if (!L.configured) openLangs(true);                // Erststart (z. B. Mac-App, Raspberry Pi): Sprachen auswählen
+}
+function openLangs(first) {
+  const L = window.I18N, on = new Set(first ? [L.lang] : L.langs);
+  $("#lgtitle").textContent = first ? "Willkommen bei Binderdex" : "Sprachen";
+  $("#lgclose").style.display = first ? "none" : "";
+  $("#lglist").innerHTML = L.all.map(l => `<label><input type="checkbox" value="${l}"${on.has(l) ? " checked" : ""}> ${L.names[l]}</label>`).join("");
+  const defs = () => {
+    const sel = [...$("#lglist").querySelectorAll("input:checked")].map(i => i.value), cur = $("#lgdef").value || (first ? L.lang : L.default);
+    $("#lgdef").innerHTML = sel.map(l => `<option value="${l}"${l === cur ? " selected" : ""}>${L.names[l]}</option>`).join("");
+    $("#lgsave").disabled = !sel.length;
+  };
+  $("#lgdef").innerHTML = ""; $("#lgmsg").textContent = "";
+  $("#lglist").onchange = defs; defs();
+  $("#lgsave").onclick = async () => {
+    const langs = [...$("#lglist").querySelectorAll("input:checked")].map(i => i.value), def = $("#lgdef").value;
+    const r = await post("/api/i18n", {langs, default: def});
+    if (!r.ok) { $("#lgmsg").textContent = r.msg || "Konnte nicht gespeichert werden."; return; }
+    L.setLang(langs.includes(L.lang) && !first ? L.lang : def);
+  };
+  $("#lgclose").onclick = () => $("#lgmodal").style.display = "none";
+  $("#lgmodal").style.display = "block";
+}
+langUI();
+
 load(); loadSets(); loadAI();
 fetch("/api/dens").then(r => r.json()).then(d => DENS = d).catch(() => {});
 </script>

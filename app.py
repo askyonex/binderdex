@@ -17,12 +17,13 @@ import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 
-from flask import Flask, Response, jsonify, request, send_from_directory
+from flask import Flask, Response, has_request_context, jsonify, request, send_from_directory
 
 DB = os.environ.get("DB_PATH", "pokedex.db")  # fuer Docker: /data/pokedex.db
 TCG = "https://api.tcgdex.net/v2"
 POKE = "https://pokeapi.co/api/v2"
 LANGS = ["de", "en", "ja"]
+I18N_VERSION = "1"  # bei geaenderten Uebersetzungen erhoehen, damit Browser das neue Woerterbuch laden
 
 app = Flask(__name__, static_folder="static")
 progress = {"done": 0, "total": 0, "running": False}
@@ -109,6 +110,7 @@ def init():
             rarity TEXT, image TEXT, dex_id INTEGER, qty INTEGER DEFAULT 1);
         CREATE TABLE IF NOT EXISTS binder(dex_id INTEGER PRIMARY KEY, card_id TEXT);
         CREATE TABLE IF NOT EXISTS dex_info(id INTEGER PRIMARY KEY, genus TEXT, text TEXT, game TEXT);
+        CREATE TABLE IF NOT EXISTS dex_text(id INTEGER, lang TEXT, genus TEXT, text TEXT, game TEXT, PRIMARY KEY(id, lang));
         CREATE TABLE IF NOT EXISTS favorites(dex_id INTEGER PRIMARY KEY);
         CREATE TABLE IF NOT EXISTS wishlist(card_id TEXT PRIMARY KEY, name TEXT, set_name TEXT, set_id TEXT, local_id TEXT,
             rarity TEXT, image TEXT, dex_id INTEGER, lang TEXT, price REAL, added TEXT);
@@ -122,7 +124,7 @@ def init():
             image TEXT, price REAL, delta INTEGER, newc INTEGER, newp INTEGER);
         """
     )
-    for col in ("name_en TEXT", "name_ja TEXT"):  # Namen in Englisch und Japanisch (Migration)
+    for col in ("name_en TEXT", "name_ja TEXT", "name_es TEXT"):  # Namen in Englisch, Japanisch, Spanisch (Migration)
         try:
             con.execute(f"ALTER TABLE pokemon ADD COLUMN {col}")
         except sqlite3.OperationalError:
@@ -154,26 +156,56 @@ GAMES_DE = {
 }
 
 
-def species_info(d):
-    """Name, Kategorie, Pokedex-Eintrag (neuester deutscher) und Spiel aus den PokeAPI-Daten."""
-    name = next((n["name"] for n in d["names"] if n["language"]["name"] == "de"), d["name"].capitalize())
-    genus = next((g["genus"] for g in d.get("genera", []) if g["language"]["name"] == "de"), "")
+GAMES_EN = {
+    "red": "Red", "blue": "Blue", "yellow": "Yellow", "gold": "Gold", "silver": "Silver", "crystal": "Crystal",
+    "ruby": "Ruby", "sapphire": "Sapphire", "emerald": "Emerald", "firered": "FireRed", "leafgreen": "LeafGreen",
+    "diamond": "Diamond", "pearl": "Pearl", "platinum": "Platinum", "heartgold": "HeartGold", "soulsilver": "SoulSilver",
+    "black": "Black", "white": "White", "black-2": "Black 2", "white-2": "White 2", "x": "X", "y": "Y",
+    "omega-ruby": "Omega Ruby", "alpha-sapphire": "Alpha Sapphire", "sun": "Sun", "moon": "Moon",
+    "ultra-sun": "Ultra Sun", "ultra-moon": "Ultra Moon", "lets-go-pikachu": "Let's Go, Pikachu!",
+    "lets-go-eevee": "Let's Go, Eevee!", "sword": "Sword", "shield": "Shield",
+    "brilliant-diamond": "Brilliant Diamond", "shining-pearl": "Shining Pearl",
+    "legends-arceus": "Legends: Arceus", "scarlet": "Scarlet", "violet": "Violet", "legends-za": "Legends: Z-A",
+}
+GAMES_ES = {
+    "red": "Rojo", "blue": "Azul", "yellow": "Amarillo", "gold": "Oro", "silver": "Plata", "crystal": "Cristal",
+    "ruby": "Rubí", "sapphire": "Zafiro", "emerald": "Esmeralda", "firered": "Rojo Fuego", "leafgreen": "Verde Hoja",
+    "diamond": "Diamante", "pearl": "Perla", "platinum": "Platino", "heartgold": "Oro HeartGold", "soulsilver": "Plata SoulSilver",
+    "black": "Negro", "white": "Blanco", "black-2": "Negro 2", "white-2": "Blanco 2", "x": "X", "y": "Y",
+    "omega-ruby": "Rubí Omega", "alpha-sapphire": "Zafiro Alfa", "sun": "Sol", "moon": "Luna",
+    "ultra-sun": "Ultrasol", "ultra-moon": "Ultraluna", "lets-go-pikachu": "Let's Go, Pikachu!",
+    "lets-go-eevee": "Let's Go, Eevee!", "sword": "Espada", "shield": "Escudo",
+    "brilliant-diamond": "Diamante Brillante", "shining-pearl": "Perla Reluciente",
+    "legends-arceus": "Leyendas Pokémon: Arceus", "scarlet": "Escarlata", "violet": "Púrpura", "legends-za": "Leyendas Pokémon: Z-A",
+}
+GAMES = {"de": GAMES_DE, "en": GAMES_EN, "es": GAMES_ES}
+DEX_LANGS = ("de", "en", "es")  # Sprachen der Oberflaeche und des Pokedex (Namen, Kategorie, Eintrag)
+
+
+def dex_entry(d, lang):
+    """Kategorie, neuester Pokedex-Eintrag und Spiel in einer Sprache aus den PokeAPI-Daten."""
+    genus = next((g["genus"] for g in d.get("genera", []) if g["language"]["name"] == lang), "")
     best, best_v = None, -1
     for e in d.get("flavor_text_entries", []):
-        if e["language"]["name"] != "de":
+        if e["language"]["name"] != lang:
             continue
         vid = int(e["version"]["url"].rstrip("/").rsplit("/", 1)[1])
         if vid > best_v:  # hoehere Versions-ID = neueres Spiel
             best, best_v = e, vid
     text, game = "", ""
     if best:
-        raw = re.sub(r"-[\n\f]+(?=[a-zäöüß])", "", best["flavor_text"].replace("\u00ad", ""))  # Silbentrennung am Zeilenende aufheben
+        raw = re.sub(r"-[\n\f]+(?=[a-zäöüßáéíóúñ])", "", best["flavor_text"].replace("\u00ad", ""))  # Silbentrennung am Zeilenende aufheben
         text = re.sub(r"\s+", " ", re.sub(r"-[\n\f]+", "-", raw)).strip()  # Bindestrich vor Grossbuchstaben bleibt erhalten
         slug = best["version"]["name"]
-        game = GAMES_DE.get(slug, slug.replace("-", " ").title())
-    en = next((n["name"] for n in d["names"] if n["language"]["name"] == "en"), "")
-    ja = next((n["name"] for n in d["names"] if n["language"]["name"] == "ja-Hrkt"), "") or next((n["name"] for n in d["names"] if n["language"]["name"] == "ja"), "")
-    return name, genus, text, game, en, ja
+        game = GAMES.get(lang, GAMES_EN).get(slug, slug.replace("-", " ").title())
+    return genus, text, game
+
+
+def species_info(d):
+    """Namen (de, en, ja, es) und Pokedex-Eintraege (de, en, es) aus den PokeAPI-Daten."""
+    nm = lambda code: next((n["name"] for n in d["names"] if n["language"]["name"] == code), "")
+    names = {"de": nm("de") or d["name"].capitalize(), "en": nm("en"), "ja": nm("ja-Hrkt") or nm("ja"), "es": nm("es") or nm("en")}
+    return names, {lang: dex_entry(d, lang) for lang in DEX_LANGS}
 
 
 def load_pokemon():
@@ -181,7 +213,8 @@ def load_pokemon():
     progress["running"] = True
     try:
         total = fetch(f"{POKE}/pokemon-species?limit=1")["count"]
-        have = {r["id"] for r in q("SELECT id FROM pokemon WHERE name_en IS NOT NULL")} & {r["id"] for r in q("SELECT id FROM dex_info")}
+        have = ({r["id"] for r in q("SELECT id FROM pokemon WHERE name_en IS NOT NULL AND name_es IS NOT NULL")}
+                & {r["id"] for r in q("SELECT id FROM dex_info")} & {r["id"] for r in q("SELECT id FROM dex_text WHERE lang='es'")})
         todo = [i for i in range(1, total + 1) if i not in have]
         progress.update(done=total - len(todo), total=total)
 
@@ -191,13 +224,16 @@ def load_pokemon():
                     return (i,) + species_info(fetch(f"{POKE}/pokemon-species/{i}"))
                 except Exception:
                     pass
-            return i, None, "", "", "", "", ""
+            return i, None, None
 
         with ThreadPoolExecutor(8) as ex:
-            for i, name, genus, text, game, en, ja in ex.map(one, todo):
-                if name:
-                    run("INSERT OR REPLACE INTO pokemon(id, name, name_en, name_ja) VALUES(?,?,?,?)", (i, name, en, ja))
-                    run("INSERT OR REPLACE INTO dex_info VALUES(?,?,?,?)", (i, genus, text, game))
+            for i, names, entries in ex.map(one, todo):
+                if names:
+                    run("INSERT OR REPLACE INTO pokemon(id, name, name_en, name_ja, name_es) VALUES(?,?,?,?,?)",
+                        (i, names["de"], names["en"], names["ja"], names["es"]))
+                    run("INSERT OR REPLACE INTO dex_info VALUES(?,?,?,?)", (i,) + entries["de"])
+                    for lang in ("en", "es"):
+                        run("INSERT OR REPLACE INTO dex_text VALUES(?,?,?,?,?)", (i, lang) + entries[lang])
                     progress["done"] += 1
     finally:
         progress["running"] = False
@@ -646,8 +682,8 @@ def dex_payload(dex_id, lang):
                 c["image"] = fallback_image(lang, c["set_id"], c["local_id"], low=True)
     for c in cards:
         del c["_o"]
-    info = q("""SELECT p.name, d.genus, d.text, d.game FROM pokemon p LEFT JOIN dex_info d ON d.id = p.id WHERE p.id=?""", (dex_id,))
-    info = info[0] if info else {"name": f"#{dex_id}", "genus": "", "text": "", "game": ""}
+    genus, text, game = dex_text(dex_id)
+    info = {"name": dex_name(dex_id), "genus": genus, "text": text, "game": game}
     cur = q("SELECT c.* FROM binder b JOIN cards c ON c.id = b.card_id WHERE b.dex_id=?", (dex_id,))
     return {"status": "ok", "dex_id": dex_id, "lang": lang, "name": info["name"], "genus": info["genus"] or "",
             "text": info["text"] or "", "game": info["game"] or "", "binder_card": cur[0] if cur else None, "cards": cards}
@@ -717,8 +753,7 @@ def slot_info(row):
     row["in_binder"] = bool(cur) and cur[0]["id"] == row["id"]
     row["binder_card"] = cur[0] if cur and cur[0]["id"] != row["id"] else None
     row["dex_name"] = dex_name(row["dex_id"]) if row["dex_id"] else ""
-    info = q("SELECT genus, text, game FROM dex_info WHERE id=?", (row["dex_id"],)) if row["dex_id"] else []
-    row["dex_genus"], row["dex_text"], row["dex_game"] = (info[0]["genus"], info[0]["text"], info[0]["game"]) if info else ("", "", "")
+    row["dex_genus"], row["dex_text"], row["dex_game"] = dex_text(row["dex_id"]) if row["dex_id"] else ("", "", "")
     return row
 
 
@@ -760,8 +795,76 @@ def get_series(lang):
     return out
 
 
+# ================= Sprachen der Oberflaeche (de, en, es)
+# Die Oberflaeche ist auf Deutsch geschrieben, static/i18n.js uebersetzt sie im Browser mit static/i18n/<lang>.json.
+# Welche Sprachen zur Auswahl stehen, steht in meta (ui_langs, ui_default). BINDERDEX_LANGS (z. B. "de,en",
+# die erste ist die Standardsprache) setzt sie von aussen, etwa der Windows-Installer oder docker-compose.
+UI_LANGS = DEX_LANGS
+_dicts = {}
+
+
+def ui_config():
+    env = ",".join(l for l in (x.strip().lower() for x in os.environ.get("BINDERDEX_LANGS", "").split(",")) if l in UI_LANGS)
+    if env and env != meta_get("ui_env", ""):  # neue Auswahl von aussen (Installer, Umgebungsvariable) uebernehmen
+        meta_set("ui_langs", env)
+        meta_set("ui_default", env.split(",")[0])
+        meta_set("ui_env", env)
+    langs = [l for l in (meta_get("ui_langs", "") or "").split(",") if l in UI_LANGS]
+    default = meta_get("ui_default", "") or ""
+    if not langs:
+        return {"langs": list(UI_LANGS), "default": "", "configured": False}
+    return {"langs": langs, "default": default if default in langs else langs[0], "configured": True}
+
+
+def ui_lang():
+    """Sprache der aktuellen Anfrage: Cookie bzw. ?ui= vom Browser, sonst die Standardsprache."""
+    if has_request_context():
+        l = (request.args.get("ui") or request.headers.get("X-UI-Lang") or request.cookies.get("ui_lang") or "").lower()
+        if l in UI_LANGS:
+            return l
+    c = ui_config()
+    return c["default"] or "de"
+
+
+def ui_dict(lang):
+    if lang not in _dicts:
+        try:
+            with open(os.path.join(app.root_path, "static", "i18n", f"{lang}.json"), encoding="utf-8") as f:
+                _dicts[lang] = json.load(f)
+        except (OSError, ValueError):
+            _dicts[lang] = {}
+    return _dicts[lang]
+
+
+def tr(text, lang=None):
+    """Deutschen Text fuer Exporte uebersetzen (gleiches Woerterbuch wie im Browser, nur exakte Treffer)."""
+    lang = lang or ui_lang()
+    return text if lang == "de" else ui_dict(lang).get(text, text)
+
+
+def pname(alias="p"):
+    """SQL-Ausdruck fuer den Pokemon-Namen in der Sprache der Anfrage (Rueckfall: deutsch)."""
+    l = ui_lang()
+    return f"COALESCE(NULLIF({alias}.name_{l}, ''), {alias}.name)" if l in ("en", "es") else f"{alias}.name"
+
+
+def dex_text(dex_id, lang=None):
+    """(Kategorie, Pokedex-Eintrag, Spiel) in der Sprache der Anfrage; fehlt der Eintrag, zuerst Englisch, dann Deutsch."""
+    lang = lang or ui_lang()
+    de = q("SELECT genus, text, game FROM dex_info WHERE id=?", (dex_id,))
+    rows = {r["lang"]: r for r in q("SELECT lang, genus, text, game FROM dex_text WHERE id=?", (dex_id,))}
+    rows["de"] = de[0] if de else None
+    for l in (lang, "en", "de"):
+        r = rows.get(l)
+        if r and r["text"]:
+            genus = (rows.get(lang) or {}).get("genus") or r["genus"] or ""
+            return genus, r["text"], r["game"] or ""
+    r = rows.get(lang) or rows.get("de")
+    return ((r["genus"] or ""), "", "") if r else ("", "", "")
+
+
 def dex_name(dex_id):
-    r = q("SELECT name FROM pokemon WHERE id=?", (dex_id,))
+    r = q(f"SELECT {pname()} AS name FROM pokemon p WHERE id=?", (dex_id,))
     return r[0]["name"] if r else f"#{dex_id}"
 
 
@@ -771,15 +874,53 @@ def favicon():
     return send_from_directory("static", "favicon.ico", mimetype="image/vnd.microsoft.icon", max_age=86400)
 
 
+def i18n_head():
+    """Sprach-Konfiguration und Uebersetzer fuer den Kopf jeder HTML-Seite."""
+    cfg = dict(ui_config(), v=I18N_VERSION)
+    return (f'<script>window.BDX_CFG={json.dumps(cfg)};</script>'
+            f'<script src="/static/i18n.js?v={I18N_VERSION}"></script>')
+
+
 @app.get("/")
 def index():
-    return send_from_directory("static", "index.html")
+    with open(os.path.join(app.root_path, "static", "index.html"), encoding="utf-8") as f:
+        page = f.read()
+    resp = Response(page.replace("<!--I18N-->", i18n_head(), 1), mimetype="text/html")
+    resp.headers["Cache-Control"] = "no-cache"
+    return resp
+
+
+@app.get("/i18n/<lang>.js")
+def i18n_dict(lang):
+    """Woerterbuch einer Sprache als Skript (Deutsch ist die Ausgangssprache und braucht keins)."""
+    d = ui_dict(lang) if lang in UI_LANGS and lang != "de" else {}
+    return Response("window.BDX_DICT=" + json.dumps(d, ensure_ascii=False) + ";", mimetype="text/javascript",
+                    headers={"Cache-Control": "public, max-age=86400"})
+
+
+@app.get("/api/i18n")
+def i18n_get():
+    return jsonify(dict(ui_config(), all=list(UI_LANGS)))
+
+
+@app.post("/api/i18n")
+def i18n_set():
+    """Sprachen, die in der App zur Auswahl stehen (erste = Standard fuer neue Geraete)."""
+    d = request.json or {}
+    langs = [l for l in d.get("langs", []) if l in UI_LANGS]
+    langs = list(dict.fromkeys(langs))
+    if not langs:
+        return jsonify(ok=False, msg="Mindestens eine Sprache auswählen."), 400
+    default = d.get("default") if d.get("default") in langs else langs[0]
+    meta_set("ui_langs", ",".join([default] + [l for l in langs if l != default]))
+    meta_set("ui_default", default)
+    return jsonify(ok=True, **ui_config())
 
 
 @app.get("/api/dex")
 def dex():
     rows = q(
-        """SELECT p.id, p.name, c.id AS cid, c.name AS cname, c.set_name, c.rarity, c.image, c.lang, c.price, c.price_holo, c.price_own, c.variant,
+        f"""SELECT p.id, {pname()} AS name, c.id AS cid, c.name AS cname, c.set_name, c.rarity, c.image, c.lang, c.price, c.price_holo, c.price_own, c.variant,
                   (SELECT COUNT(*) FROM cards x WHERE x.dex_id = p.id) AS n,
                   (SELECT COALESCE(SUM(x.qty), 0) FROM cards x WHERE x.dex_id = p.id) AS total,
                   (SELECT COUNT(*) FROM favorites f WHERE f.dex_id = p.id) AS fav
@@ -856,7 +997,7 @@ def stats():
                      "caught": sum(1 for b in binder if lo <= b["dex_id"] <= hi)})
     tot = q(f"SELECT COALESCE(SUM(qty), 0) AS cards, COUNT(*) AS distinct_cards, COALESCE(SUM({psql()} * qty), 0) AS value FROM cards")[0]
     top = q(f"""SELECT c.id, c.name, c.set_name, c.local_id, c.rarity, c.image, c.lang, c.price, c.price_holo, c.price_own, c.variant, c.qty,
-                      p.name AS dex_name, (b.card_id IS NOT NULL) AS in_binder
+                      {pname()} AS dex_name, (b.card_id IS NOT NULL) AS in_binder
                FROM cards c LEFT JOIN pokemon p ON p.id = c.dex_id LEFT JOIN binder b ON b.card_id = c.id
                WHERE ({psql('c.')}) IS NOT NULL ORDER BY ({psql('c.')}) DESC LIMIT 10""")
     hist = q("SELECT day, binder, total, cards, caught FROM value_history ORDER BY day DESC LIMIT 120")[::-1]
@@ -905,13 +1046,13 @@ def wish():
 @app.get("/api/trade")
 def trade():
     """Tauschliste: was du abgeben kannst (Nebenstapel + doppelte Exemplare) und was du suchst (Wunschliste)."""
-    offer = q("""SELECT * FROM (
-                   SELECT c.id, c.name, c.set_name, c.local_id, c.rarity, c.image, c.lang, c.price, c.price_holo, c.price_own, c.variant, p.name AS dex_name,
+    offer = q(f"""SELECT * FROM (
+                   SELECT c.id, c.name, c.set_name, c.local_id, c.rarity, c.image, c.lang, c.price, c.price_holo, c.price_own, c.variant, {pname()} AS dex_name,
                           CASE WHEN b.card_id IS NULL THEN c.qty ELSE c.qty - 1 END AS spare
                    FROM cards c LEFT JOIN pokemon p ON p.id = c.dex_id LEFT JOIN binder b ON b.card_id = c.id)
                  WHERE spare > 0""")
     offer.sort(key=lambda o: (o["price"] is None, -(o["price"] or 0)))
-    wishes = q("""SELECT w.*, p.name AS dex_name FROM wishlist w LEFT JOIN pokemon p ON p.id = w.dex_id ORDER BY w.added DESC""")
+    wishes = q(f"""SELECT w.*, {pname()} AS dex_name FROM wishlist w LEFT JOIN pokemon p ON p.id = w.dex_id ORDER BY w.added DESC""")
     return jsonify(offer=offer, wishes=wishes)
 
 
@@ -921,19 +1062,19 @@ def export_csv():
     buf = io.StringIO()
     w = csv.writer(buf, delimiter=";")
     if kind == "missing":
-        w.writerow(["Pokédex-Nr.", "Pokémon"])
-        for r in q("SELECT id, name FROM pokemon WHERE id NOT IN (SELECT dex_id FROM binder) ORDER BY id"):
+        w.writerow([tr("Pokédex-Nr."), "Pokémon"])
+        for r in q(f"SELECT id, {pname()} AS name FROM pokemon p WHERE id NOT IN (SELECT dex_id FROM binder) ORDER BY id"):
             w.writerow([r["id"], r["name"]])
         fname = "fehlende-pokemon"
     else:
-        w.writerow(["Pokédex-Nr.", "Pokémon", "Karte", "Set", "Nummer", "Seltenheit", "Sprache", "Anzahl", "Preis (EUR)", "Im Binder"])
-        for r in q("""SELECT c.dex_id, p.name AS dex_name, c.name, c.set_name, c.local_id, c.rarity, c.lang, c.qty, c.price, c.price_holo, c.price_own, c.variant,
+        w.writerow([tr(x) for x in ["Pokédex-Nr.", "Pokémon", "Karte", "Set", "Nummer", "Seltenheit", "Sprache", "Anzahl", "Preis (EUR)", "Im Binder"]])
+        for r in q(f"""SELECT c.dex_id, {pname()} AS dex_name, c.name, c.set_name, c.local_id, c.rarity, c.lang, c.qty, c.price, c.price_holo, c.price_own, c.variant,
                              (b.card_id IS NOT NULL) AS in_binder
                       FROM cards c LEFT JOIN pokemon p ON p.id = c.dex_id LEFT JOIN binder b ON b.card_id = c.id
                       ORDER BY (c.dex_id IS NULL), c.dex_id, c.name"""):
-            price = ("%.2f" % r["price"]).replace(".", ",") if r["price"] is not None else ""
-            w.writerow([r["dex_id"] or "", r["dex_name"] or "", r["name"], r["set_name"], r["local_id"], r["rarity"] or "",
-                        (r["lang"] or "de").upper(), r["qty"], price, "ja" if r["in_binder"] else "nein"])
+            price = dec(r["price"])
+            w.writerow([r["dex_id"] or "", r["dex_name"] or "", r["name"], r["set_name"], r["local_id"], tr(r["rarity"] or ""),
+                        (r["lang"] or "de").upper(), r["qty"], price, tr("ja") if r["in_binder"] else tr("nein")])
         fname = "sammlung"
     data = ("\ufeff" + buf.getvalue()).encode("utf-8")  # BOM, damit Excel Umlaute richtig anzeigt
     return Response(data, mimetype="text/csv", headers={"Content-Disposition": f"attachment; filename={fname}-{datetime.date.today():%Y%m%d}.csv"})
@@ -943,15 +1084,23 @@ def cm_link(r):
     """Cardmarket-Link: direkte Produktseite (bei Ball-Mustern Suche mit Musternamen, weil dort eigene Produkte moeglich sind)."""
     v = r.get("variant") or ""
     if r.get("cm_id") and v not in PATTERN_VARIANTS:
-        return f"https://www.cardmarket.com/de/Pokemon/Products?idProduct={r['cm_id']}" + ("&isFoil=Y" if v in FOIL_VARIANTS else "")
+        return f"https://www.cardmarket.com/{ui_lang()}/Pokemon/Products?idProduct={r['cm_id']}" + ("&isFoil=Y" if v in FOIL_VARIANTS else "")
     words = f"{r['name']} {r['local_id']}" + (f" {PATTERN_SEARCH[v]}" if v in PATTERN_VARIANTS else "")
-    return "https://www.cardmarket.com/de/Pokemon/Products/Search?searchString=" + urllib.parse.quote_plus(words)
+    return f"https://www.cardmarket.com/{ui_lang()}/Pokemon/Products/Search?searchString=" + urllib.parse.quote_plus(words)
 
 
 def variant_suffix(v):
     if v in PATTERN_VARIANTS:
-        return f" ({VARIANT_LABELS[v]} Reverse Holo)"
-    return f" ({VARIANT_LABELS[v]})" if v in ("reverse", "holo") else ""
+        return f" ({tr(VARIANT_LABELS[v])} Reverse Holo)"
+    return f" ({tr(VARIANT_LABELS[v])})" if v in ("reverse", "holo") else ""
+
+
+def dec(x):
+    """Betrag fuer CSV-Dateien: Dezimalkomma (de, es) bzw. Dezimalpunkt (en)."""
+    if x is None:
+        return ""
+    v = "%.2f" % x
+    return v if ui_lang() == "en" else v.replace(".", ",")
 
 
 @app.post("/api/variant")
@@ -1110,16 +1259,16 @@ def export_side():
     details, spare = request.args.get("details") == "1", request.args.get("spare", "1") == "1"
     rows = side_rows(spare)
     meta_inc("exports")
-    fmt = lambda x: ("%.2f" % x).replace(".", ",") if x is not None else ""
+    fmt = dec
     buf = io.StringIO()
     w = csv.writer(buf, delimiter=";")
-    w.writerow(["Name", "Wert (EUR)", "Cardmarket-Link"] + (["Anzahl", "Summe (EUR)", "Set", "Nummer", "Seltenheit", "Sprache", "Variante", "Zustand", "Bild-Link"] if details else []))
+    w.writerow([tr(x) for x in ["Name", "Wert (EUR)", "Cardmarket-Link"] + (["Anzahl", "Summe (EUR)", "Set", "Nummer", "Seltenheit", "Sprache", "Variante", "Zustand", "Bild-Link"] if details else [])])
     for r in rows:
         v = r["variant"] or ""
         name = r["name"] + variant_suffix(v)
         if details:
             w.writerow([name, fmt(r["price"]), cm_link(r), r["spare"], fmt(r["price"] * r["spare"]) if r["price"] is not None else "",
-                        r["set_name"], r["local_id"], r["rarity"] or "", (r["lang"] or "de").upper(), VARIANT_LABELS.get(v, "Normal"),
+                        r["set_name"], r["local_id"], tr(r["rarity"] or ""), (r["lang"] or "de").upper(), tr(VARIANT_LABELS.get(v, "Normal")),
                         r["cond"] or "NM", r["image"] or ""])
         else:
             for _ in range(r["spare"]):  # jedes Exemplar eine Zeile, damit die Summe der Spalte B stimmt
@@ -1173,8 +1322,8 @@ def export_side_xlsx():
         list(ex.map(thumb_bytes, urls))
     wb = Workbook()
     ws = wb.active
-    ws.title = "Verkaufsliste"
-    head = ["Bild", "Name", "Wert (EUR)", "Anzahl", "Summe (EUR)", "Zustand", "Set", "Nummer", "Seltenheit", "Sprache", "Variante", "Cardmarket"]
+    ws.title = tr("Verkaufsliste")[:31]
+    head = [tr(x) for x in ["Bild", "Name", "Wert (EUR)", "Anzahl", "Summe (EUR)", "Zustand", "Set", "Nummer", "Seltenheit", "Sprache", "Variante", "Cardmarket"]]
     ws.append(head)
     for c in ws[1]:
         c.font, c.fill, c.alignment = Font(bold=True, color="FFFFFF"), PatternFill("solid", fgColor="1F6F85"), Alignment(vertical="center", horizontal="center")
@@ -1184,7 +1333,7 @@ def export_side_xlsx():
     for n, r in enumerate(rows, start=2):
         v = r["variant"] or ""
         ws.append(["", r["name"] + variant_suffix(v), r["price"], r["spare"], f"=IF(C{n}=\"\",\"\",C{n}*D{n})", r["cond"] or "NM", r["set_name"],
-                   r["local_id"], r["rarity"] or "", (r["lang"] or "de").upper(), VARIANT_LABELS.get(v, "Normal"), "Cardmarket"])
+                   r["local_id"], tr(r["rarity"] or ""), (r["lang"] or "de").upper(), tr(VARIANT_LABELS.get(v, "Normal")), "Cardmarket"])
         ws.row_dimensions[n].height = 100
         ws.cell(n, 12).hyperlink = cm_link(r)
         ws.cell(n, 12).font = Font(color="0563C1", underline="single")
@@ -1216,7 +1365,7 @@ def sell_page():
     rows = side_rows(request.args.get("spare", "1") == "1")
     meta_inc("exports")
     total = sum((r["price"] or 0) * r["spare"] for r in rows)
-    fmt = lambda x: ("%.2f €" % x).replace(".", ",") if x is not None else "–"
+    fmt = lambda x: ("–" if x is None else ("€%.2f" % x) if ui_lang() == "en" else ("%.2f €" % x).replace(".", ","))
     body = "".join(
         f"<tr><td class='im'>{'<img src=\"' + html.escape(r['image']) + '\" alt=\"\">' if r['image'] else ''}</td>"
         f"<td><b>{html.escape(r['name'] + variant_suffix(r['variant'] or ''))}</b><br><small>{html.escape(r['set_name'] or '')} {html.escape(str(r['local_id']))}"
@@ -1224,7 +1373,7 @@ def sell_page():
         f"<td>{r['cond'] or 'NM'}</td><td class='n'>{r['spare']}×</td><td class='n'>{fmt(r['price'])}</td>"
         f"<td class='n'>{fmt(r['price'] * r['spare'] if r['price'] is not None else None)}</td>"
         f"<td class='no'><a href='{html.escape(cm_link(r))}' target='_blank' rel='noopener'>Cardmarket</a></td></tr>" for r in rows)
-    page = f"""<!doctype html><html lang="de"><head><meta charset="utf-8"><title>Verkaufsliste</title>
+    page = f"""<!doctype html><html lang="de"><head><meta charset="utf-8">{i18n_head()}<title>Verkaufsliste</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>body{{font:15px/1.35 system-ui,sans-serif;margin:24px;color:#1f2433}}h1{{margin:0 0 4px}}
 table{{border-collapse:collapse;width:100%;margin-top:14px}}th,td{{border-bottom:1px solid #d8dde6;padding:6px 8px;text-align:left;vertical-align:middle}}
@@ -1286,10 +1435,13 @@ def backup_download():
 
 @app.get("/api/dexinfo")
 def dexinfo():
-    r = q("""SELECT p.id, p.name, d.genus, d.text, d.game,
-                    (SELECT COUNT(*) FROM favorites f WHERE f.dex_id = p.id) AS fav
-             FROM pokemon p LEFT JOIN dex_info d ON d.id = p.id WHERE p.id=?""", (int(request.args["id"]),))
-    return jsonify(r[0] if r else {})
+    dex_id = int(request.args["id"])
+    r = q(f"""SELECT p.id, {pname()} AS name, (SELECT COUNT(*) FROM favorites f WHERE f.dex_id = p.id) AS fav
+              FROM pokemon p WHERE p.id=?""", (dex_id,))
+    if not r:
+        return jsonify({})
+    r[0]["genus"], r[0]["text"], r[0]["game"] = dex_text(dex_id)
+    return jsonify(r[0])
 
 
 @app.post("/api/favorite")
@@ -1304,7 +1456,7 @@ def favorite():
 
 @app.get("/api/cards")
 def cards():
-    base = """SELECT c.*, p.name AS dex_name, (b.card_id IS NOT NULL) AS in_binder,
+    base = f"""SELECT c.*, {pname()} AS dex_name, (b.card_id IS NOT NULL) AS in_binder,
                      CASE WHEN b.card_id IS NULL THEN c.qty ELSE c.qty - 1 END AS spare
               FROM cards c LEFT JOIN pokemon p ON p.id = c.dex_id
               LEFT JOIN binder b ON b.card_id = c.id """
@@ -1680,6 +1832,7 @@ def grade_ai():
     if imgs and ai_ok(ai_config()):
         try:
             prompt = GRADE_PROMPT.replace("{labels}", ", ".join(i.get("label", f"image{n + 1}") for n, i in enumerate(imgs)))
+            prompt += "\nWrite all free-text values (notes, defects, summary) in " + {"de": "German", "en": "English", "es": "Spanish"}[ui_lang()] + "."
             ai = parse_grade_json(ai_vision(prompt, [i["data"].split(",", 1)[-1] for i in imgs], ollama_timeout=420))
         except AIError as e:
             msg = str(e)
@@ -2030,10 +2183,13 @@ def prices_refresh():
     return jsonify(ok=True)
 
 
-if __name__ == "__main__":
+def startup():
+    """Datenbank anlegen/migrieren und Hintergrundaufgaben starten.
+    Wird von app.py selbst und vom Desktop-Starter (desktop/binderdex_desktop.py) aufgerufen."""
     init()
     n_names = q("SELECT COUNT(*) AS n FROM pokemon")[0]["n"]
-    if n_names < 1000 or q("SELECT COUNT(*) AS n FROM dex_info")[0]["n"] < n_names or q("SELECT COUNT(*) AS n FROM pokemon WHERE name_en IS NULL")[0]["n"]:
+    if (n_names < 1000 or q("SELECT COUNT(*) AS n FROM dex_info")[0]["n"] < n_names or q("SELECT COUNT(*) AS n FROM pokemon WHERE name_en IS NULL OR name_es IS NULL")[0]["n"]
+            or q("SELECT COUNT(*) AS n FROM dex_text WHERE lang='es'")[0]["n"] < n_names):
         threading.Thread(target=load_pokemon, daemon=True).start()
     if q("SELECT COUNT(*) AS n FROM cards WHERE price IS NULL OR px_at IS NULL")[0]["n"]:
         threading.Thread(target=refresh_prices, args=(True,), daemon=True).start()
@@ -2043,5 +2199,9 @@ if __name__ == "__main__":
         threading.Thread(target=backfill_ja_names, daemon=True).start()
     if q("SELECT COUNT(*) AS n FROM cards WHERE category IS NULL")[0]["n"]:
         threading.Thread(target=backfill_categories, daemon=True).start()
+
+
+if __name__ == "__main__":
+    startup()
     # lokal: 127.0.0.1 | im Heimnetz/Docker: HOST=0.0.0.0
     app.run(host=os.environ.get("HOST", "127.0.0.1"), port=int(os.environ.get("PORT", "5000")))

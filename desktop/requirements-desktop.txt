@@ -1,0 +1,4 @@
+# Zusaetzlich zu ../requirements.txt fuer die Desktop-App und den Build
+pywebview>=5.3      # eigenes App-Fenster (Windows: WebView2, macOS: WebKit)
+pyinstaller>=6.10   # packt alles in ein Programm, kein Python beim Nutzer noetig
+pillow>=10.0        # erzeugt die App-Symbole (.ico / .icns)

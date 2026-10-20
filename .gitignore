@@ -26,3 +26,13 @@ Thumbs.db
 
 # Local notes
 *.local.md
+
+# Desktop-Build (PyInstaller / Installer)
+/build/
+/dist/
+desktop/build/
+.venv-build/
+
+# Sprachauswahl des Installers beim lokalen Testen
+binderdex.ini
+tools/i18n_keys.json

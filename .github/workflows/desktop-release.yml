@@ -1,0 +1,119 @@
+# Baut die Desktop-Versionen und haengt sie an ein GitHub-Release.
+#
+# Ausloesen:  git tag v1.0.0 && git push origin v1.0.0
+#   -> Windows-Installer (.exe) + macOS-DMGs (Apple Silicon und Intel) im Release "v1.0.0"
+# Probelauf ohne Release: Reiter "Actions" > "Desktop release" > "Run workflow"
+#   -> die Dateien liegen dann nur als Download unter "Artifacts" des Laufs
+name: Desktop release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Version bestimmen
+        shell: bash
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then V="${GITHUB_REF_NAME#v}"; else V="$(cat VERSION)"; fi
+          echo "$V" > VERSION
+          echo "VERSION=$V" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Abhaengigkeiten
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r desktop/requirements-desktop.txt
+
+      - name: Symbole und Programm bauen
+        run: |
+          python desktop/make_icons.py
+          pyinstaller desktop/binderdex.spec --noconfirm --clean
+
+      - name: Inno Setup installieren
+        run: choco install innosetup -y --no-progress
+
+      - name: Installer bauen
+        shell: pwsh
+        run: |
+          $iscc = Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\ISCC.exe"
+          & $iscc "/DMyAppVersion=$env:VERSION" desktop\installer\binderdex.iss
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: dist/installer/*.exe
+
+  macos:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15        # Apple Silicon (M1 und neuer)
+            arch: arm64
+          - runner: macos-15-intel  # aeltere Macs mit Intel-Prozessor
+            arch: x86_64
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Version bestimmen
+        run: |
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then V="${GITHUB_REF_NAME#v}"; else V="$(cat VERSION)"; fi
+          echo "$V" > VERSION
+          echo "VERSION=$V" >> "$GITHUB_ENV"
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Abhaengigkeiten
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r desktop/requirements-desktop.txt
+
+      - name: Symbole und App bauen
+        run: |
+          python desktop/make_icons.py
+          pyinstaller desktop/binderdex.spec --noconfirm --clean
+
+      - name: DMG bauen
+        run: bash desktop/make_dmg.sh "$VERSION" "${{ matrix.arch }}"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-${{ matrix.arch }}
+          path: dist/*.dmg
+
+  release:
+    # Laeuft auch, wenn ein Mac-Build scheitert (z. B. Intel), solange Windows geklappt hat
+    if: always() && github.ref_type == 'tag' && needs.windows.result == 'success'
+    needs: [windows, macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: out
+          merge-multiple: true
+
+      - name: Pruefsummen
+        run: cd out && sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: out/*
+          generate_release_notes: true

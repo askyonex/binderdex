@@ -1,0 +1,79 @@
+# Texte aus dem Code, die nicht uebersetzt werden (CSS-Selektoren, Adressen, Eigennamen, gleichlautende Woerter).
+# Eine Zeile pro Text, genau wie ihn tools/i18n_extract.py meldet.
+Einstellungen: Design, Binder-Seite, Töne
+qwen3-vl:8b
+EUR
+POST
+Content-Type
+assets.tcgdex.net/en/
+/high.webp
+/low.png
+/high.png
+{0} / {1}
+Kanto
+Johto
+III
+Hoenn
+Sinnoh
+Kalos
+VII
+Alola
+VIII
+Galar
+Paldea
+class="alt"
+#msg [data-i]
+Pokemon
+Pokémon
+Trainer
+Energy
+side=1
+.vsel, .pown, .csel
+/verkauf?spare={0}&ui={1}
+{0}:{1}
+Escape
+Near Mint
+Mint
+Excellent
+Good
+Light Played
+Played
+Poor
+meta[name="theme-color"]
+Content-Disposition
+var(--green)
+var(--yel)
+{0}/{1}
+{0} %
+#gbody .gedit[data-k="{0}"]
+#gbody [data-gc="{0}"]
+PSA
+Normal
+Reverse Holo
+Holo
+cardmarket-listing.csv
+{0},{1}
+Cardmarket
+/low.webp
+_200w.jpg
+_in_1000x1000.jpg
+.mc img, figure img
+button[data-w]
+eng+deu
+(\d{1,3})\s*[/|Il!71]{0}\s*0*{1}(?!\d)
+Space
+INPUT
+SELECT
+BUTTON
+(min-width:701px)
+Enter
+input:checked
+Blattgrün
+Weiß
+Weiß 2
+Leyendas Pokémon: Arceus
+Leyendas Pokémon: Z-A
+<tr><td class='im'>{0}</td>
+#msg [data-i]
+#gbody .gedit[data-k="{0}"]
+#gbody [data-gc="{0}"]

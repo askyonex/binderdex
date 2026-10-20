@@ -18,6 +18,9 @@ Open <http://localhost:5000>. Use a separate `test.db` so you do not touch your 
 | --- | --- |
 | `app.py` | Flask backend, SQLite, calls to TCGdex / PokeAPI / tcgcsv.com |
 | `static/index.html` | The whole frontend (HTML, CSS, JavaScript in one file, no build step) |
+| `static/i18n.js`, `static/i18n/*.json` | Translations (see [docs/translating.md](docs/translating.md)) |
+| `tools/` | Translation helpers (extract texts, build the dictionaries) |
+| `desktop/` | Desktop app: launcher, PyInstaller build, Windows installer, macOS DMG |
 | `merge_db.py` | Merges two databases |
 | `scripts/backup.sh` | Backup script (local and optional network share) |
 | `docs/` | Documentation (English and German) |
@@ -26,7 +29,7 @@ Open <http://localhost:5000>. Use a separate `test.db` so you do not touch your 
 
 - Keep it simple: no build tools, no frontend framework, few dependencies.
 - Please **do not add card images, logos or official artwork** to the repository or to pull requests.
-- Code comments and UI texts are currently German. English comments are welcome, and a proper UI translation (i18n) is the biggest open topic (see README roadmap). If you want to work on it, open an issue first so we can agree on the approach.
+- Code comments and the source UI texts are German; English comments are welcome. The UI is translated at runtime: when you add or change a text, run `python tools/i18n_extract.py --check` and add the missing translations (see [docs/translating.md](docs/translating.md)).
 - Test your change with a fresh database and with an existing one (the database is migrated automatically in `init()`).
 - Mention the data source and terms if you add a new external service.
 

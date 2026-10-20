@@ -5,13 +5,14 @@ Built around one idea: **one card per Pokémon in your binder** (a Pokédex of c
 
 > **Unofficial fan project.** Not affiliated with, endorsed or sponsored by The Pokémon Company, Nintendo, Creatures or Game Freak. See the [legal notice](#legal-notice).
 >
-> **Language:** the user interface and in-app texts are currently **German** (Pokémon names and Pokédex entries are German as well). An English UI is on the [roadmap](#roadmap), contributions are very welcome. Deutsche Version: [README.de.md](README.de.md)
+> **Languages:** the app is available in **English, German and Spanish**: interface, Pokémon names and Pokédex entries. You choose the languages on the first start (or in the Windows installer) and can switch anytime in the settings. Deutsche Version: [README.de.md](README.de.md)
 
-No account, no cloud, no API key. It runs on your PC, a Raspberry Pi or a small server, and your data stays in a single SQLite file.
+No account, no cloud, no API key. It runs as a desktop app on Windows and macOS, or as a web app on your PC, a Raspberry Pi or a small server, and your data stays in a single SQLite file.
 
 ## Features
 
 **Pokédex and binder**
+- **English, German and Spanish** (interface, Pokémon names, Pokédex entries, exports), switchable per device; more languages can be added with a dictionary file and a few lines of code ([docs/translating.md](docs/translating.md))
 - All Pokémon in national Pokédex order with progress bar; missing ones show as silhouettes
 - One card per Pokémon in the binder; a second card shows both side by side: *replace* or *send to side pile*
 - Pokédex entry (text from the games) and category for every Pokémon, favorites (star), filters (caught, missing, favorites, generation, fullart / no fullart) and sorting (number, price, number of cards)
@@ -43,6 +44,21 @@ No account, no cloud, no API key. It runs on your PC, a Raspberry Pi or a small 
 - Several people / devices can use the same instance at the same time
 - Docker image, backup script (local + optional network share), database merge tool
 - Retro Pokédex-style design (pixel fonts, red device, dark LCD display)
+
+## Download: desktop app (Windows / macOS)
+
+The easiest way: no Python, no terminal. Download the file for your system from the [latest release](https://github.com/askyonex/binderdex/releases/latest):
+
+| System | File |
+| ------ | ---- |
+| Windows 10 / 11 (64-bit) | `BinderDex-Setup-x.y.z.exe` |
+| Mac with Apple Silicon (M1 or newer) | `BinderDex-x.y.z-macOS-arm64.dmg` |
+| Mac with Intel processor | `BinderDex-x.y.z-macOS-x86_64.dmg` |
+
+**Windows:** run the installer (no admin rights needed). Because the app is not code-signed, Windows may show *"Windows protected your PC"*: click **More info → Run anyway**.
+**macOS:** open the DMG and drag BinderDex onto *Applications*. On the first start macOS blocks the app because it is not notarized by Apple: open **System Settings → Privacy & Security**, scroll down and click **Open Anyway** (only needed once).
+
+The installer asks which app languages you want (English, German, Spanish). The desktop app runs the same app in its own window, the camera scan works with your webcam. Your collection is stored per user (Windows: `%APPDATA%\BinderDex`, macOS: `~/Library/Application Support/BinderDex`) and stays there on updates and (if you choose so) uninstalls. The app tells you when a new version is available. Details: [docs/desktop-app.md](docs/desktop-app.md)
 
 ## Quick start
 
@@ -79,6 +95,7 @@ docker compose up -d --build     # then open http://localhost:5000
 
 - [User guide](docs/user-guide.md) / [Benutzerhandbuch](docs/benutzerhandbuch.md)
 - [Self-hosting (Docker, Raspberry Pi, HTTPS, phone app, backups)](docs/self-hosting.md) / [Selbst hosten](docs/selbst-hosten.md)
+- [Desktop app (download, data folder, building a release)](docs/desktop-app.md) / [Desktop-App](docs/desktop-app.de.md)
 - [Contributing](CONTRIBUTING.md)
 
 ## Data sources and credits
@@ -105,7 +122,7 @@ The app caches what it can and requests data in small batches. Please respect th
 
 ## Known limitations
 
-- German UI and German Pokémon names / Pokédex entries (see roadmap)
+- Card names, set names and rarities of English and Japanese cards are shown as printed (German rarities are translated)
 - Card number OCR depends on light, distance and camera. Typing the number always works
 - Prices are indicative: Cardmarket trend via TCGdex, not language specific, sometimes missing (especially Japanese cards). Ball pattern variants have no price of their own, enter one manually
 - One variant per card (if you own the same card as normal and reverse holo, set an own price or treat them separately)
@@ -113,7 +130,7 @@ The app caches what it can and requests data in small batches. Please respect th
 
 ## Roadmap
 
-- Translatable UI (English first) and Pokémon names / Pokédex entries in the UI language
+- More UI languages (French, Italian, ...): contributions welcome, see [docs/translating.md](docs/translating.md)
 - Several collections (profiles) in one instance
 - Price alerts for wishlist cards, upgrade suggestions (better card for a Pokémon)
 - Self-hosted fonts and OCR files (offline use, no CDN)
