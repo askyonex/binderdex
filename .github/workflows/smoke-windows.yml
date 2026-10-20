@@ -1,0 +1,36 @@
+name: Smoke test Windows
+on:
+  push:
+    branches: ["smoke/**"]
+jobs:
+  smoke:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Build
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r desktop/requirements-desktop.txt
+          python desktop/make_icons.py
+          pyinstaller desktop/binderdex.spec --noconfirm
+      - name: Run exe and report
+        shell: pwsh
+        run: |
+          $env:BINDERDEX_DATA_DIR = "$env:RUNNER_TEMP\bdx"
+          $env:BINDERDEX_NO_UPDATE_CHECK = "1"
+          $p = Start-Process -FilePath "dist\BinderDex\BinderDex.exe" -PassThru
+          Start-Sleep -Seconds 30
+          $alive = -not $p.HasExited
+          $code = if ($p.HasExited) { $p.ExitCode } else { "running" }
+          try { $r = (Invoke-WebRequest -UseBasicParsing http://127.0.0.1:47821/api/i18n -TimeoutSec 5).Content } catch { $r = "HTTP-ERR $_" }
+          $log = if (Test-Path "$env:BINDERDEX_DATA_DIR\binderdex.log") { Get-Content -Raw "$env:BINDERDEX_DATA_DIR\binderdex.log" } else { "NO LOG FILE" }
+          $files = (Get-ChildItem $env:BINDERDEX_DATA_DIR -ErrorAction SilentlyContinue | ForEach-Object Name) -join ", "
+          $txt = "alive=$alive exit=$code`nhttp=$r`nfiles=$files`n--- LOG ---`n$log"
+          $txt = $txt.Substring([Math]::Max(0, $txt.Length - 12000))
+          $esc = $txt.Replace('%','%25').Replace("`r",'').Replace("`n",'%0A')
+          Write-Output "::warning title=SMOKE::$esc"
+          Get-WinEvent -FilterHashtable @{LogName='Application'; StartTime=(Get-Date).AddMinutes(-3)} -ErrorAction SilentlyContinue | Where-Object { $_.Message -match 'BinderDex' } | Select-Object -First 3 | ForEach-Object { $m = $_.Message.Substring(0,[Math]::Min(3000,$_.Message.Length)).Replace('%','%25').Replace("`r",'').Replace("`n",'%0A'); Write-Output "::warning title=EVENT::$m" }
+          if ($p -and -not $p.HasExited) { Stop-Process -Id $p.Id -Force }
