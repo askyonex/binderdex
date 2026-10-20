@@ -77,6 +77,7 @@ def installer_langs():
 
 
 def setup_logging(ddir):
+    """Protokoll in binderdex.log; Abstuerze ausserhalb von Python (z. B. im Fenster) landen in crash.log."""
     # Im Fenster-Modus (ohne Konsole) sind stdout/stderr unter Windows None -> ins Log umleiten
     logfile = os.path.join(ddir, "binderdex.log")
     handler = logging.handlers.RotatingFileHandler(logfile, maxBytes=1_000_000, backupCount=2, encoding="utf-8")
@@ -90,6 +91,11 @@ def setup_logging(ddir):
         sys.stderr = sys.stderr or stream
     else:
         root.addHandler(logging.StreamHandler())
+    try:  # harte Abstuerze (z. B. in WebView2/.NET) mit Python-Stack festhalten
+        import faulthandler
+        faulthandler.enable(open(os.path.join(ddir, "crash.log"), "a", encoding="utf-8"), all_threads=True)  # noqa: SIM115
+    except Exception:  # noqa: BLE001
+        pass
     # Fehler in Hintergrund-Threads (Preise, Bilder ...) ebenfalls ins Log
     threading.excepthook = lambda a: logging.getLogger("binderdex.thread").error(
         "Fehler im Thread %s", a.thread.name if a.thread else "?", exc_info=(a.exc_type, a.exc_value, a.exc_traceback))
@@ -269,14 +275,14 @@ def main():
         window.events.loaded.wait(30)
         check_update(window, version)
 
-    icon = os.path.join(resource_dir(), "static", "icon-512.png")
+    # Kein eigenes Fenstersymbol uebergeben: Windows (WinForms) akzeptiert dort nur .ico und stuerzt bei
+    # einer PNG-Datei ohne Python-Fehlermeldung ab. Windows nimmt das Symbol der .exe, macOS das der .app.
     try:
         webview.start(
             on_started,
             private_mode=False,  # Einstellungen der Oberflaeche (localStorage) behalten
             storage_path=os.path.join(ddir, "webview"),
             debug=bool(os.environ.get("BINDERDEX_DEBUG")),
-            icon=icon if os.path.exists(icon) else None,
         )
     finally:
         log.info("Fenster geschlossen, beende Backend")
