@@ -1,0 +1,48 @@
+{
+ "_info": "Aenderungen je Version, neueste zuerst. Wird nach einem Update in der App angezeigt (in der Sprache der Oberflaeche) und als Text des GitHub-Releases verwendet. Vor jedem Release einen Eintrag fuer die neue Version anlegen, notfalls nur mit Fehlerbehebungen.",
+ "versions": [
+  {
+   "version": "1.2.0",
+   "date": "2026-10-21",
+   "de": [
+    "Updates direkt in der App: „Jetzt aktualisieren“ lädt die neue Version, prüft sie und installiert sie (Windows und macOS), danach startet Ninedex neu",
+    "Nach einem Update zeigt Ninedex, was sich geändert hat",
+    "Verkaufen auf Cardmarket und „Gelistet“: Suche (Name, Pokémon, Set, Nummer, Sprache) und Sortierung",
+    "Fehlerbehebungen"
+   ],
+   "en": [
+    "Updates right in the app: “Update now” downloads the new version, checks it and installs it (Windows and macOS), then Ninedex restarts",
+    "After an update, Ninedex shows what has changed",
+    "Sell on Cardmarket and “Listed”: search (name, Pokémon, set, number, language) and sorting",
+    "Bug fixes"
+   ],
+   "es": [
+    "Actualizaciones desde la propia app: «Actualizar ahora» descarga la nueva versión, la comprueba y la instala (Windows y macOS); después Ninedex se reinicia",
+    "Tras una actualización, Ninedex muestra qué ha cambiado",
+    "Vender en Cardmarket y «Publicadas»: búsqueda (nombre, Pokémon, set, número, idioma) y orden",
+    "Corrección de errores"
+   ]
+  },
+  {
+   "version": "1.1.0",
+   "date": "2026-10-21",
+   "de": ["Neuer Name: Ninedex (vorher Binderdex). Deine Sammlung wird beim ersten Start automatisch übernommen", "Fehlerbehebungen"],
+   "en": ["New name: Ninedex (formerly Binderdex). Your collection is moved over automatically on the first start", "Bug fixes"],
+   "es": ["Nuevo nombre: Ninedex (antes Binderdex). Tu colección se traslada automáticamente al primer inicio", "Corrección de errores"]
+  },
+  {
+   "version": "1.0.1",
+   "date": "2026-10-20",
+   "de": ["Fehlerbehebung: Unter Windows schloss sich die App direkt nach dem Start"],
+   "en": ["Bug fix: on Windows the app closed right after starting"],
+   "es": ["Corrección: en Windows la app se cerraba nada más iniciarse"]
+  },
+  {
+   "version": "1.0.0",
+   "date": "2026-10-20",
+   "de": ["Erste Version als Desktop-App für Windows und macOS mit Installer", "Deutsch, Englisch und Spanisch: Oberfläche, Pokémon-Namen und Pokédex-Einträge"],
+   "en": ["First version as a desktop app for Windows and macOS with installer", "English, German and Spanish: interface, Pokémon names and Pokédex entries"],
+   "es": ["Primera versión como app de escritorio para Windows y macOS con instalador", "Alemán, inglés y español: interfaz, nombres de Pokémon y entradas de la Pokédex"]
+  }
+ ]
+}

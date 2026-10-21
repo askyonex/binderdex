@@ -79,3 +79,6 @@ Leyendas Pokémon: Z-A
 #gbody [data-gc="{0}"]
 NFD
 &quot;
+&amp;
+· {0}
+{0} {1} ·

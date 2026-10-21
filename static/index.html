@@ -176,6 +176,10 @@ textarea{width:100%;padding:8px 10px;font:20px/1.1 var(--vt);background:var(--na
 .menubtn{padding:0;border:0;border-radius:0;background:none;box-shadow:none;font:inherit;color:inherit;text-transform:inherit;text-shadow:inherit;letter-spacing:inherit;text-align:left;cursor:default}
 .menubtn:active{transform:none;box-shadow:none}
 .foot{margin:0 40px 32px;color:var(--mute);font-size:18px;line-height:1.1;text-align:center}
+.foot .ver{display:block;margin-top:6px}.foot .ver a{color:var(--cyan);cursor:pointer;text-decoration:underline}
+#clbody .clv{margin:4px 0 14px}#clbody h3{margin:0 0 6px;font:11px/1.6 var(--px);color:var(--yel)}#clbody h3 small{color:var(--mute);font:inherit}
+#clbody ul{margin:0;padding-left:22px;color:#fff}#clbody li{margin:4px 0}#clbody li::marker{color:var(--red)}
+#clmodal .bx{border-color:var(--red)}
 .sc .dxl{display:block;color:var(--cyan);margin-top:2px}
 .sct{display:flex;flex-direction:column}.sct .scn{margin-top:4px}.sct .qtyc{margin-top:auto;padding-top:8px}
 .qtyc{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:8px}
@@ -426,6 +430,10 @@ textarea{width:100%;padding:8px 10px;font:20px/1.1 var(--vt);background:var(--na
   <div id="pinfo"></div><div id="pbody"></div>
 </div></div>
 <div id="cmodal"><div id="cbox"><div id="cbody"></div></div></div>
+<div id="clmodal" class="ov"><div class="bx" style="max-width:620px">
+  <div class="hd"><h2 id="cltitle">Was ist neu</h2><button id="clclose" class="alt">Schließen</button></div>
+  <div class="bd"><div id="clbody" class="notranslate"></div><div class="acts"><button id="clok">Alles klar</button></div></div>
+</div></div>
 <div id="lgmodal" class="ov"><div class="bx" style="max-width:560px">
   <div class="hd"><h2 id="lgtitle">Sprachen</h2><button id="lgclose" class="alt">Schließen</button></div>
   <div class="bd">
@@ -2175,6 +2183,48 @@ function openLangs(first) {
   $("#lgmodal").style.display = "block";
 }
 langUI();
+
+/* ---------- Was ist neu (Changelog nach einem Update, in der Sprache der Oberfläche) ---------- */
+const verNum = v => String(v || "0").split(".").map(n => parseInt(n, 10) || 0);
+const verCmp = (a, b) => { const x = verNum(a), y = verNum(b); for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) - (y[i] || 0); return 0; };
+let CL = null, APPV = "";
+async function changelogData() {
+  if (!CL) CL = await (await fetch("/static/changelog.json?v=" + encodeURIComponent(APPV))).json();
+  return CL.versions || [];
+}
+async function showChangelog(from, to, title) {
+  const L = window.I18N ? I18N.lang : "de", all = await changelogData();
+  if (!all.some(v => v.version === to))   // kein Eintrag fuer diese Version: allgemeiner Hinweis
+    all.unshift({version: to, date: "", de: ["Fehlerbehebungen"], en: ["Bug fixes"], es: ["Corrección de errores"]});
+  const vs = all.filter(v => verCmp(v.version, to) <= 0 && (!from || verCmp(v.version, from) > 0)).slice(0, 6);
+  if (!vs.length) return;
+  const esc = t => String(t).replace(/[&<>]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;"})[c]);
+  const date = d => { try { return new Date(d + "T12:00:00").toLocaleDateString(LOC, {day: "numeric", month: "long", year: "numeric"}); } catch (e) { return d; } };
+  $("#cltitle").textContent = title;
+  $("#clbody").innerHTML = vs.map(v => `<div class="clv"><h3>${esc(TX("Version") + " " + v.version)} ${v.date ? `<small>· ${esc(date(v.date))}</small>` : ""}</h3>
+    <ul>${(v[L] || v.en || v.de || []).map(x => `<li>${esc(x)}</li>`).join("")}</ul></div>`).join("");
+  $("#clmodal").style.display = "block";
+}
+async function changelogCheck() {
+  let v; try { v = await (await fetch("/api/version")).json(); } catch (e) { return; }
+  APPV = v.version;
+  $(".foot").insertAdjacentHTML("beforeend", `<span class="ver">${TX("Version")} ${v.version} · <a id="clopen">${TX("Was ist neu?")}</a></span>`);
+  $("#clopen").onclick = () => showChangelog("", v.version, TX("Was ist neu"));
+  const KEY = "changelogSeen";
+  let seen = null; try { seen = localStorage.getItem(KEY); } catch (e) {}
+  const mark = () => { try { localStorage.setItem(KEY, v.version); } catch (e) {} };
+  if ($("#lgmodal").style.display === "block") return mark();          // Erststart mit Sprachauswahl: nichts Neues zu zeigen
+  let from = null;
+  if (seen) { if (verCmp(seen, v.version) < 0) from = seen; }           // dieses Gerät kannte eine ältere Version
+  else if (v.prev && v.prev !== v.version) from = v.prev;              // Update laut Server (erstes Öffnen auf diesem Gerät)
+  mark();
+  if (from === null) return;
+  // "0" = Update von einer Version ohne diese Anzeige: nur die aktuelle Version zeigen
+  showChangelog(from === "0" ? (await changelogData()).filter(x => verCmp(x.version, v.version) < 0).map(x => x.version)[0] || "" : from,
+                v.version, TX("Neu in Version {0}").replace("{0}", v.version));
+}
+$("#clclose").onclick = $("#clok").onclick = () => $("#clmodal").style.display = "none";
+changelogCheck();
 
 load(); loadSets(); loadAI();
 fetch("/api/dens").then(r => r.json()).then(d => DENS = d).catch(() => {});

@@ -147,10 +147,30 @@ jobs:
     needs: [windows, macos]
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+
       - uses: actions/download-artifact@v4
         with:
           path: out
           merge-multiple: true
+
+      - name: Release-Text aus static/changelog.json
+        run: |
+          python3 - <<'PY'
+          import json, os
+          ver = os.environ["GITHUB_REF_NAME"].lstrip("vV")
+          vs = json.load(open("static/changelog.json", encoding="utf-8"))["versions"]
+          v = next((x for x in vs if x["version"] == ver), None)
+          if v is None:  # kein Eintrag: Release trotzdem bauen, mit allgemeinem Text
+              print(f"::warning::static/changelog.json hat keinen Eintrag fuer {ver}")
+              v = {"en": ["Bug fixes"], "de": ["Fehlerbehebungen"], "es": ["Corrección de errores"]}
+          out = []
+          for lang, head in (("en", "What's new"), ("de", "Neu"), ("es", "Novedades")):
+              out.append(f"### {head}\n" + "\n".join(f"- {x}" for x in v.get(lang, [])))
+          out.append("**Windows:** `Ninedex-Setup-%s.exe` · **Mac (Apple Silicon):** `Ninedex-%s-macOS-arm64.dmg` · **Mac (Intel):** `Ninedex-%s-macOS-x86_64.dmg`" % (ver, ver, ver))
+          open("release-notes.md", "w", encoding="utf-8").write("\n\n".join(out) + "\n")
+          print(open("release-notes.md", encoding="utf-8").read())
+          PY
 
       - name: Pruefsummen
         run: cd out && sha256sum * > SHA256SUMS.txt && cat SHA256SUMS.txt
@@ -158,4 +178,4 @@ jobs:
       - uses: softprops/action-gh-release@v2
         with:
           files: out/*
-          generate_release_notes: true
+          body_path: release-notes.md

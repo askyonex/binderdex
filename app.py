@@ -23,7 +23,7 @@ DB = os.environ.get("DB_PATH", "pokedex.db")  # fuer Docker: /data/pokedex.db
 TCG = "https://api.tcgdex.net/v2"
 POKE = "https://pokeapi.co/api/v2"
 LANGS = ["de", "en", "ja"]
-I18N_VERSION = "3"  # bei geaenderten Uebersetzungen erhoehen, damit Browser das neue Woerterbuch laden
+I18N_VERSION = "4"  # bei geaenderten Uebersetzungen erhoehen, damit Browser das neue Woerterbuch laden
 
 app = Flask(__name__, static_folder="static")
 progress = {"done": 0, "total": 0, "running": False}
@@ -2183,10 +2183,35 @@ def prices_refresh():
     return jsonify(ok=True)
 
 
+def app_version():
+    try:
+        with open(os.path.join(app.root_path, "VERSION"), encoding="utf-8") as f:
+            return f.read().strip() or "0.0.0"
+    except OSError:
+        return "0.0.0"
+
+
+def track_version():
+    """Merkt sich, von welcher Version aus aktualisiert wurde (fuer die Anzeige "Was ist neu").
+    prev_version: "" = Neuinstallation, "0" = Update von einer Version ohne diese Funktion."""
+    cur, last = app_version(), meta_get("last_version", "") or ""
+    if last == cur:
+        return
+    had_data = q("SELECT COUNT(*) AS n FROM cards")[0]["n"] or q("SELECT COUNT(*) AS n FROM pokemon")[0]["n"]
+    meta_set("prev_version", last or ("0" if had_data else ""))
+    meta_set("last_version", cur)
+
+
+@app.get("/api/version")
+def version_get():
+    return jsonify(version=app_version(), prev=meta_get("prev_version", "") or "")
+
+
 def startup():
     """Datenbank anlegen/migrieren und Hintergrundaufgaben starten.
     Wird von app.py selbst und vom Desktop-Starter (desktop/ninedex_desktop.py) aufgerufen."""
     init()
+    track_version()
     n_names = q("SELECT COUNT(*) AS n FROM pokemon")[0]["n"]
     if (n_names < 1000 or q("SELECT COUNT(*) AS n FROM dex_info")[0]["n"] < n_names or q("SELECT COUNT(*) AS n FROM pokemon WHERE name_en IS NULL OR name_es IS NULL")[0]["n"]
             or q("SELECT COUNT(*) AS n FROM dex_text WHERE lang='es'")[0]["n"] < n_names):

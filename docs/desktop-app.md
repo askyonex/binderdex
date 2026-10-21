@@ -62,7 +62,7 @@ python desktop/ninedex_desktop.py          # NINEDEX_DEBUG=1 enables the dev too
 | `desktop/build_windows.bat` | Local Windows build for testing |
 | `.github/workflows/desktop-release.yml` | Builds everything on GitHub and attaches it to the release |
 
-**Release:** set the version in `VERSION`, commit, then tag and push:
+**Release:** set the version in `VERSION`, add an entry for it at the top of `static/changelog.json` (German, English, Spanish; "Bug fixes" is fine), commit, then tag and push. The entry is shown in the app after the update ("What's new", in the UI language and theme color, also via the version link in the footer) and becomes the text of the GitHub release:
 
 ```bash
 git tag v1.0.1
