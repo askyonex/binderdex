@@ -71,18 +71,20 @@ jobs:
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Installer- und Update-Test (still installieren, Sprachen behalten, Neustart nach Update)
+        timeout-minutes: 8
         shell: pwsh
         run: |
           $setup = (Get-Item dist\installer\Ninedex-Setup-*.exe).FullName
           $dir = "$env:LOCALAPPDATA\Programs\Ninedex"
           $env:NINEDEX_NO_UPDATE_CHECK = "1"
           # 1) Erstinstallation (still, nur fuer diesen Benutzer)
-          Start-Process $setup -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART","/CURRENTUSER" -Wait
+          # (WaitForExit statt -Wait: -Wait wuerde auch auf das danach gestartete Ninedex warten)
+          (Start-Process $setup -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART","/CURRENTUSER" -PassThru).WaitForExit()
           if (-not (Test-Path "$dir\Ninedex.exe")) { Write-Output "::error::Installation fehlgeschlagen"; exit 1 }
           # 2) Sprachauswahl wie nach einer normalen Installation mit Startsprache Spanisch
           Set-Content -Path "$dir\ninedex.ini" -Value "[ui]`r`nlanguages=es,de" -Encoding utf8
           # 3) Update wie aus der App heraus
-          Start-Process $setup -ArgumentList "/SILENT","/SUPPRESSMSGBOXES","/NORESTART","/CLOSEAPPLICATIONS","/update=1" -Wait
+          (Start-Process $setup -ArgumentList "/SILENT","/SUPPRESSMSGBOXES","/NORESTART","/CLOSEAPPLICATIONS","/update=1" -PassThru).WaitForExit()
           Start-Sleep -Seconds 15
           $ini = Get-Content -Raw "$dir\ninedex.ini"
           $running = Get-Process Ninedex -ErrorAction SilentlyContinue
