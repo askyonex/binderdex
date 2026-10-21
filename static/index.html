@@ -231,6 +231,7 @@ textarea{width:100%;padding:8px 10px;font:20px/1.1 var(--vt);background:var(--na
 .vctl{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin-bottom:10px;color:#fff}
 .vtbl{width:100%;border-collapse:collapse;color:#fff}.vtbl td,.vtbl th{padding:6px;border-bottom:1px solid #1f4f5f;text-align:left;vertical-align:middle}
 .vtbl img{width:44px;border-radius:4px;display:block}.vtbl input[type=number]{width:84px}.vtbl select{width:74px}
+.vfind{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:4px 0 10px;color:#fff}.vfind input{flex:1 1 220px;min-width:0}.vfind small{color:var(--mute)}
 .vtbl tr.off td{opacity:.45}.vfoot{position:sticky;bottom:0;margin-top:10px;padding:10px 0;background:var(--navy);display:flex;flex-wrap:wrap;gap:10px;align-items:center;color:#fff}
 .vstep{display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start;color:#fff}.vstep img{width:220px;max-width:100%;border-radius:10px}
 .vval{display:grid;grid-template-columns:auto auto auto;gap:8px 12px;align-items:center;margin:10px 0}.vval b{font:400 11px/1.4 var(--px);color:var(--yel)}
@@ -1407,25 +1408,50 @@ async function openSell() {
   renderSell();
 }
 function vsum() { const s = V.rows.filter(r => r.on); return {n: s.reduce((a, r) => a + (+r.qty || 0), 0), v: s.reduce((a, r) => a + (+r.qty || 0) * (+r.price || 0), 0), k: s.length}; }
+const vnorm = s => String(s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
+const vmatch = (q, ...fields) => { const t = vnorm(fields.join(" ")); return vnorm(q).split(/\s+/).filter(Boolean).every(w => t.includes(w)); };
+const vcmp = (a, b) => String(a || "").localeCompare(String(b || ""), document.documentElement.lang || "de", {numeric: true, sensitivity: "base"});
+const VSORT_SEL = [["pdesc", "Preis: hoch → niedrig"], ["pasc", "Preis: niedrig → hoch"], ["name", "Name A–Z"], ["set", "Set und Nummer"], ["dex", "Pokédex-Nr."], ["qty", "Meiste Exemplare zuerst"], ["sel", "Ausgewählte zuerst"]];
+const VSORT_LST = [["new", "Neueste zuerst"], ["old", "Älteste zuerst"], ["pdesc", "Preis: hoch → niedrig"], ["pasc", "Preis: niedrig → hoch"], ["name", "Name A–Z"], ["set", "Set und Nummer"]];
+const vsortSel = (opts, cur, id) => `<select id="${id}" aria-label="Sortierung" title="Sortierung">${opts.map(([k, l]) => `<option value="${k}"${cur === k ? " selected" : ""}>${l}</option>`).join("")}</select>`;
+function vfindBar(qid, sid, opts, cur) {
+  return `<div class="vfind"><input id="${qid}" type="search" value="${(V[qid] || "").replace(/\u0022/g, "&quot;")}" placeholder="Karte, Set oder Nummer suchen" aria-label="Karte, Set oder Nummer suchen" autocomplete="off">
+    ${vsortSel(opts, cur, sid)}<small id="${qid}n"></small></div>`;
+}
+function vvisible() {                                  // sichtbare Zeilen der Auswahl (Suche + Sortierung), Index bleibt der in V.rows
+  const q = V.vq || "", s = V.vsort || "pdesc", pr = r => +r.price || r.c.price || 0;
+  const list = V.rows.map((r, i) => [r, i]).filter(([r]) => !q || vmatch(q, r.c.name, r.c.dex_name, r.c.set_name, r.c.local_id, varTxt(r.c.variant), LANGC[r.c.lang]));
+  const by = {pdesc: (a, b) => pr(b) - pr(a), pasc: (a, b) => pr(a) - pr(b), name: (a, b) => vcmp(a.c.name, b.c.name),
+    set: (a, b) => vcmp(a.c.set_name, b.c.set_name) || vcmp(a.c.local_id, b.c.local_id), dex: (a, b) => (a.c.dex_id || 1e9) - (b.c.dex_id || 1e9) || vcmp(a.c.name, b.c.name),
+    qty: (a, b) => b.avail - a.avail || pr(b) - pr(a), sel: (a, b) => (b.on - a.on) || pr(b) - pr(a)}[s];
+  return list.sort((x, y) => by(x[0], y[0]) || x[1] - y[1]);
+}
 function renderSell() {
   const t = vsum();
   $("#vbody").innerHTML = V.rows.length ? `<p><small>Wähle die Karten aus dem Nebenstapel, die du verkaufen willst. Anzahl, Zustand und Preis kannst du je Karte ändern. Der Preis ist ein Vorschlag aus dem Cardmarket-Trend.</small></p>
     <div class="vctl"><label>Preis-Anpassung <select id="vadj">${[-20, -15, -10, -5, 0, 5, 10].map(x => `<option value="${x}"${V.adj === x ? " selected" : ""}>${x > 0 ? "+" : ""}${x} % zum Trend</option>`).join("")}</select></label>
       <label>Rundung <select id="vround"><option value="05"${V.round === "05" ? " selected" : ""}>auf 0,05 €</option><option value="09"${V.round === "09" ? " selected" : ""}>auf x,x9 (z. B. 1,19)</option><option value="no"${V.round === "no" ? " selected" : ""}>keine</option></select></label>
       <button class="alt" id="vapply">Preise neu vorschlagen</button><button class="alt" id="vall">Alle auswählen</button><button class="alt" id="vnone">Keine</button></div>
-    <table class="vtbl"><tr><th></th><th></th><th>Karte</th><th class="vhide">Sprache</th><th>Zustand</th><th>Anzahl</th><th>Preis (€)</th><th class="vhide">Trend</th></tr>
-    ${V.rows.map((r, i) => `<tr class="${r.on ? "" : "off"}"><td><input type="checkbox" data-von="${i}" ${r.on ? "checked" : ""} aria-label="Auswählen"></td>
+    ${vfindBar("vq", "vsort", VSORT_SEL, V.vsort || "pdesc")}
+    <div id="vlist"></div>
+    <div class="vfoot"><span id="vsum">${t.k} Karten · ${t.n} Exemplare · ${eur(t.v)}</span>
+      <button id="vstart" ${t.k ? "" : "disabled"}>Listing-Assistent starten</button>
+      <button class="alt" id="vcsv" ${t.k ? "" : "disabled"}>CSV für Massenlistung</button></div>`
+    : "<p>Im Nebenstapel gibt es nichts mehr, das noch nicht gelistet ist.</p><div class='acts'><button class='alt' id='vshowlisted'>Gelistete Karten ansehen</button></div>";
+  if (V.rows.length) renderSellList();
+}
+function renderSellList() {                            // nur die Tabelle neu zeichnen (Suchfeld behält den Fokus)
+  const vis = vvisible();
+  $("#vqn").textContent = V.vq ? `${vis.length} von ${V.rows.length} Karten` : "";
+  $("#vlist").innerHTML = vis.length ? `<table class="vtbl"><tr><th></th><th></th><th>Karte</th><th class="vhide">Sprache</th><th>Zustand</th><th>Anzahl</th><th>Preis (€)</th><th class="vhide">Trend</th></tr>
+    ${vis.map(([r, i]) => `<tr class="${r.on ? "" : "off"}"><td><input type="checkbox" data-von="${i}" ${r.on ? "checked" : ""} aria-label="Auswählen"></td>
       <td>${r.c.image ? `<img src="${r.c.image}" alt="" loading="lazy" onerror="this.remove()">` : ""}</td>
       <td><b>${r.c.name}</b><br><small>${r.c.set_name} ${r.c.local_id} · ${varTxt(r.c.variant)}${r.c.listed ? ` · ${r.c.listed}× schon gelistet` : ""}</small></td>
       <td class="vhide">${LANGC[r.c.lang] || r.c.lang}</td>
       <td><select data-vcond="${i}">${condOpts(r.cond)}</select></td>
       <td><input type="number" min="1" max="${r.avail}" step="1" value="${r.qty}" data-vqty="${i}"><br><small>von ${r.avail}</small></td>
       <td><input type="number" min="0.02" step="0.01" value="${r.price}" data-vprice="${i}"></td>
-      <td class="vhide">${eur(r.c.price)}</td></tr>`).join("")}</table>
-    <div class="vfoot"><span id="vsum">${t.k} Karten · ${t.n} Exemplare · ${eur(t.v)}</span>
-      <button id="vstart" ${t.k ? "" : "disabled"}>Listing-Assistent starten</button>
-      <button class="alt" id="vcsv" ${t.k ? "" : "disabled"}>CSV für Massenlistung</button></div>`
-    : "<p>Im Nebenstapel gibt es nichts mehr, das noch nicht gelistet ist.</p><div class='acts'><button class='alt' id='vshowlisted'>Gelistete Karten ansehen</button></div>";
+      <td class="vhide">${eur(r.c.price)}</td></tr>`).join("")}</table>` : "<p>Keine Karte passt zur Suche.</p>";
 }
 function vupd() { const t = vsum(); $("#vsum").textContent = `${t.k} Karten · ${t.n} Exemplare · ${eur(t.v)}`; $("#vstart").disabled = $("#vcsv").disabled = !t.k; }
 const vitems = () => V.rows.filter(r => r.on).map(r => ({card_id: r.c.id, qty: +r.qty, price: +r.price, cond: r.cond}));
@@ -1462,17 +1488,29 @@ function renderStep() {
 async function renderListed() {
   V.view = "listed"; $("#vtitle").textContent = "Auf Cardmarket gelistet"; $("#vmodal").style.display = "block"; $("#vbody").textContent = "Lade …";
   const [L, S] = await Promise.all([(await fetch("/api/listings")).json(), (await fetch("/api/listings?status=sold")).json()]);
+  V.L = L; V.S = S;
   const val = L.reduce((a, r) => a + r.qty * r.price, 0), sold = S.reduce((a, r) => a + r.qty * r.price, 0);
   $("#vbody").innerHTML = `<p>${L.reduce((a, r) => a + r.qty, 0)} Exemplare gelistet, Angebotswert ${eur(val)} · bisher verkauft: ${S.reduce((a, r) => a + r.qty, 0)} Exemplare für ${eur(sold)}</p>
     <p><small><b>Verkauft</b> zieht die Exemplare von deiner Sammlung ab (bei Binder-Karten bleibt die Binder-Karte immer erhalten). <b>Zurückgezogen</b> heißt, du hast das Angebot auf Cardmarket gelöscht, die Karte bleibt in der Sammlung.</small></p>
-    ${L.length ? `<table class="vtbl"><tr><th></th><th>Karte</th><th>Anzahl</th><th>Preis</th><th class="vhide">Seit</th><th></th></tr>
+    ${L.length || S.length ? vfindBar("vlq", "vlsort", VSORT_LST, V.vlsort || "new") : ""}
+    <div id="vllist"></div>
+    <div class="acts"><button class="alt" id="vback">Karten zum Verkaufen auswählen</button></div>`;
+  renderListedList();
+}
+function renderListedList() {
+  const q = V.vlq || "", s = V.vlsort || "new";
+  const m = r => !q || vmatch(q, r.name, r.set_name, r.local_id, r.cond, LANGC[r.lang]);
+  const by = {new: (a, b) => b.id - a.id, old: (a, b) => a.id - b.id, pdesc: (a, b) => b.price - a.price || b.id - a.id, pasc: (a, b) => a.price - b.price || b.id - a.id,
+    name: (a, b) => vcmp(a.name, b.name), set: (a, b) => vcmp(a.set_name, b.set_name) || vcmp(a.local_id, b.local_id)}[s];
+  const L = V.L.filter(m).sort(by), S = V.S.filter(m).sort(by);
+  if ($("#vlqn")) $("#vlqn").textContent = q ? `${L.length} von ${V.L.length} Karten` : "";
+  $("#vllist").innerHTML = `${L.length ? `<table class="vtbl"><tr><th></th><th>Karte</th><th>Anzahl</th><th>Preis</th><th class="vhide">Seit</th><th></th></tr>
       ${L.map(r => `<tr><td>${r.image ? `<img src="${r.image}" alt="" loading="lazy" onerror="this.remove()">` : ""}</td>
         <td><b>${r.name}</b><br><small>${r.set_name || ""} ${r.local_id || ""} · ${r.cond} · ${LANGC[r.lang] || r.lang || ""}</small></td>
         <td>${r.qty}×</td><td>${eur(r.price)}</td><td class="vhide"><small>${r.ts}</small></td>
         <td><div class="acts" style="margin:0"><button data-vsold="${r.id}" data-q="${r.qty}">Verkauft</button><button class="alt" data-vrem="${r.id}">Zurückgezogen</button>${r.cm_url ? `<button class="alt" data-vurl="${r.cm_url}">Öffnen</button>` : ""}</div></td></tr>`).join("")}</table>`
-      : "<p>Noch nichts gelistet.</p>"}
-    ${S.length ? `<h3 class="ser">Verkauft</h3><table class="vtbl">${S.slice(0, 50).map(r => `<tr><td>${r.name}</td><td>${r.qty}×</td><td>${eur(r.price)}</td><td><small>${r.done_ts || ""}</small></td></tr>`).join("")}</table>` : ""}
-    <div class="acts"><button class="alt" id="vback">Karten zum Verkaufen auswählen</button></div>`;
+      : V.L.length ? "<p>Keine Karte passt zur Suche.</p>" : "<p>Noch nichts gelistet.</p>"}
+    ${S.length ? `<h3 class="ser">Verkauft</h3><table class="vtbl">${S.slice(0, 50).map(r => `<tr><td>${r.name}</td><td>${r.qty}×</td><td>${eur(r.price)}</td><td><small>${r.done_ts || ""}</small></td></tr>`).join("")}</table>` : ""}`;
 }
 
 const vb = () => $("#vbody");
@@ -1482,16 +1520,20 @@ vb().addEventListener("change", e => {
   if (d.vcond != null) V.rows[+d.vcond].cond = t.value;
   if (t.id === "vadj") V.adj = +t.value;
   if (t.id === "vround") V.round = t.value;
+  if (t.id === "vsort") { V.vsort = t.value; renderSellList(); }
+  if (t.id === "vlsort") { V.vlsort = t.value; renderListedList(); }
 });
 vb().addEventListener("input", e => {
   const d = e.target.dataset;
-  if (d.vqty != null) { V.rows[+d.vqty].qty = e.target.value; if (!V.rows[+d.vqty].on) { V.rows[+d.vqty].on = true; renderSell(); } else vupd(); }
+  if (e.target.id === "vq") { V.vq = e.target.value; return renderSellList(); }
+  if (e.target.id === "vlq") { V.vlq = e.target.value; return renderListedList(); }
+  if (d.vqty != null) { const r = V.rows[+d.vqty]; r.qty = e.target.value; if (!r.on) { r.on = true; e.target.closest("tr").classList.remove("off"); const cb = e.target.closest("tr").querySelector("[data-von]"); if (cb) cb.checked = true; } vupd(); }
   if (d.vprice != null) { V.rows[+d.vprice].price = e.target.value; vupd(); }
 });
 vb().addEventListener("click", async e => {
   const b = e.target.closest("button"); if (!b) return;
-  if (b.id === "vapply") { V.rows.forEach(r => r.price = vprice(r.c.price)); return renderSell(); }
-  if (b.id === "vall" || b.id === "vnone") { V.rows.forEach(r => r.on = b.id === "vall"); return renderSell(); }
+  if (b.id === "vapply") { V.rows.forEach(r => r.price = vprice(r.c.price)); renderSellList(); return vupd(); }
+  if (b.id === "vall" || b.id === "vnone") { vvisible().forEach(([r]) => r.on = b.id === "vall"); renderSellList(); return vupd(); }   // wirkt auf die gerade sichtbaren (gefundenen) Karten
   if (b.id === "vcsv") { if (!vcheck()) return; const r = await fetch("/api/cm-export.csv", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({items: vitems()})});
     const a = document.createElement("a"); a.href = URL.createObjectURL(await r.blob()); a.download = "cardmarket-listing.csv"; document.body.appendChild(a); a.click(); a.remove();
     return toast("CSV erstellt", "Damit kannst du ein Massen-Werkzeug füttern. Danach die Karten unter Gelistet eintragen (Assistent oder Knopf)."); }

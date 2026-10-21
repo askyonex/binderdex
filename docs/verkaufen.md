@@ -12,9 +12,13 @@ Cardmarket hat eine API, über die Angebote eingestellt werden können. Nach Ber
 2. Karten wählen (alles aus dem Nebenstapel, was noch nicht gelistet ist, Doppelte der Binder-Karten eingeschlossen, die Binder-Karte nie) und **Anzahl**, **Zustand** (MT, NM, EX, GD, LP, PL, PO) und **Preis** festlegen (Vorschlag aus dem Cardmarket-Trend, mindestens 0,02 €). Eine **Preis-Anpassung** für alle (z. B. −10 % unter Trend) und die **Rundung** (0,05 €, x,x9 oder keine) berechnen die Vorschläge neu.
 3. *Listing-Assistent starten* führt Karte für Karte durch: Bild, Set, Nummer, Variante, Sprache, Foil, Zustand, Anzahl und Preis mit Kopier-Knöpfen, *Auf Cardmarket öffnen* öffnet die Produktseite (bei Reverse Holo und Holo mit Foil-Filter, bei Ball-Mustern eine Suche). Karte auf Cardmarket einstellen, dann *Eingestellt, weiter*.
 
+**Suchen und sortieren:** Über der Kartenliste findest du ein Suchfeld (Kartenname, Pokémon, Set, Nummer, Variante oder Sprache, mehrere Wörter möglich, z. B. "obsidian glurak") und eine Sortierung: Preis hoch oder niedrig, Name, Set und Nummer, Pokédex-Nr., meiste Exemplare oder ausgewählte Karten zuerst. *Alle auswählen* und *Keine* wirken auf die gerade gefundenen Karten.
+
 ## Gelistete Karten verwalten
 
 *Gelistet* zeigt alle Angebote mit dem gesamten Angebotswert. *Verkauft* zieht die verkauften Exemplare von der Sammlung ab (bei mehreren fragt die App nach der Anzahl, eine Binder-Karte wird nie entfernt), *Zurückgezogen* markiert ein auf Cardmarket gelöschtes Angebot. Gelistete Karten tragen im Nebenstapel das gelbe Etikett "n× auf Cardmarket", und der Assistent bietet nur nicht gelistete Exemplare an.
+
+Auch *Gelistet* hat Suche und Sortierung (neueste oder älteste zuerst, Preis, Name, Set und Nummer). Die Suche gilt auch für die Liste der verkauften Karten.
 
 ## CSV für Massen-Werkzeuge
 
