@@ -70,6 +70,28 @@ jobs:
           & $iscc "/DMyAppVersion=$env:VERSION" desktop\installer\ninedex.iss
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+      - name: Installer- und Update-Test (still installieren, Sprachen behalten, Neustart nach Update)
+        shell: pwsh
+        run: |
+          $setup = (Get-Item dist\installer\Ninedex-Setup-*.exe).FullName
+          $dir = "$env:LOCALAPPDATA\Programs\Ninedex"
+          $env:NINEDEX_NO_UPDATE_CHECK = "1"
+          # 1) Erstinstallation (still, nur fuer diesen Benutzer)
+          Start-Process $setup -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART","/CURRENTUSER" -Wait
+          if (-not (Test-Path "$dir\Ninedex.exe")) { Write-Output "::error::Installation fehlgeschlagen"; exit 1 }
+          # 2) Sprachauswahl wie nach einer normalen Installation mit Startsprache Spanisch
+          Set-Content -Path "$dir\ninedex.ini" -Value "[ui]`r`nlanguages=es,de" -Encoding utf8
+          # 3) Update wie aus der App heraus
+          Start-Process $setup -ArgumentList "/SILENT","/SUPPRESSMSGBOXES","/NORESTART","/CLOSEAPPLICATIONS","/update=1" -Wait
+          Start-Sleep -Seconds 15
+          $ini = Get-Content -Raw "$dir\ninedex.ini"
+          $running = Get-Process Ninedex -ErrorAction SilentlyContinue
+          Write-Output "ini nach Update: $ini"
+          Write-Output "Ninedex laeuft nach Update: $([bool]$running)"
+          $running | Stop-Process -Force -ErrorAction SilentlyContinue
+          if ($ini -notmatch "languages=es,de") { Write-Output "::error::Sprachauswahl beim Update verloren"; exit 1 }
+          if (-not $running) { Write-Output "::error::Ninedex wurde nach dem Update nicht neu gestartet"; exit 1 }
+
       - uses: actions/upload-artifact@v4
         with:
           name: windows

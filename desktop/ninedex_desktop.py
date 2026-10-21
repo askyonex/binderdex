@@ -9,7 +9,7 @@ Entwicklung (aus dem Repo-Ordner):
 
 Umgebungsvariablen (optional):
     NINEDEX_DATA_DIR          eigener Datenordner statt des Standardordners
-    NINEDEX_NO_UPDATE_CHECK=1 keine Pruefung auf neue Versionen bei GitHub
+    NINEDEX_NO_UPDATE_CHECK=1 keine Pruefung auf neue Versionen bei GitHub (und keine In-App-Updates)
     NINEDEX_DEBUG=1           Entwicklerwerkzeuge im Fenster (Rechtsklick > Untersuchen)
 Die alten Namen (BINDERDEX_*) aus der Zeit vor der Umbenennung funktionieren weiterhin.
 """
@@ -173,7 +173,17 @@ def make_server(flask_app):
         return wz_make_server(HOST, 0, flask_app, threaded=True)
 
 
-# ---------------------------------------------------------------- Update-Hinweis
+# ---------------------------------------------------------------- Updates
+
+# Ablauf: Beim Start fragt die App das neueste GitHub-Release ab. Ist es neuer, erscheint unten ein Hinweis
+# mit "Jetzt aktualisieren". Dann laedt die App die passende Datei (Windows: Installer, macOS: DMG), prueft
+# die SHA-256-Pruefsumme aus SHA256SUMS.txt desselben Releases und
+#   Windows: startet den Installer still (/SILENT /update=1), beendet sich; der Installer startet Ninedex neu
+#   macOS:   ersetzt Ninedex.app nach dem Beenden per Hilfsskript und startet neu
+# Geht das nicht (Entwicklungsversion, App-Ordner nicht beschreibbar ...), bleibt der Link zu GitHub.
+UPD = {"state": "idle", "latest": "", "url": "", "asset": None, "sums": None, "done": 0, "total": 0, "msg": ""}
+UPD_TOKEN = os.urandom(16).hex()  # schuetzt die Update-Adresse vor Aufrufen fremder Webseiten
+
 
 def _ver_tuple(v):
     parts = []
@@ -182,37 +192,193 @@ def _ver_tuple(v):
     return tuple(parts + [0] * (3 - len(parts)))
 
 
+def _gh(url, accept="application/vnd.github+json"):
+    req = urllib.request.Request(url, headers={"Accept": accept, "User-Agent": f"{APP_NAME}/{app_version()}"})
+    return urllib.request.urlopen(req, timeout=20)
+
+
+def mac_app_path():
+    """Pfad der laufenden Ninedex.app (nur im fertigen macOS-Programm)."""
+    if sys.platform != "darwin" or not getattr(sys, "frozen", False):
+        return None
+    p = os.path.abspath(sys.executable)
+    for _ in range(4):
+        p = os.path.dirname(p)
+        if p.endswith(".app"):
+            return p
+    return None
+
+
+def update_asset_name(ver):
+    if sys.platform == "win32" and getattr(sys, "frozen", False):
+        return f"{APP_NAME}-Setup-{ver}.exe"
+    if mac_app_path():
+        import platform
+        arch = "arm64" if platform.machine() == "arm64" else "x86_64"
+        return f"{APP_NAME}-{ver}-macOS-{arch}.dmg"
+    return None
+
+
 def check_update(window, current):
     if env("NO_UPDATE_CHECK") or current == "0.0.0":
         return
     try:
-        req = urllib.request.Request(f"https://api.github.com/repos/{REPO}/releases/latest",
-                                     headers={"Accept": "application/vnd.github+json", "User-Agent": f"{APP_NAME}/{current}"})
-        with urllib.request.urlopen(req, timeout=8) as r:
+        with _gh(f"https://api.github.com/repos/{REPO}/releases/latest") as r:
             rel = json.load(r)
         latest, url = rel.get("tag_name", ""), rel.get("html_url", f"https://github.com/{REPO}/releases")
         if not latest or _ver_tuple(latest) <= _ver_tuple(current):
             return
-        log.info("Neue Version verfuegbar: %s (installiert: %s)", latest, current)
-        text = f"Neue Version {latest.lstrip('vV')} verfügbar (installiert: {current})"
-        js = """(() => {
-  if (document.getElementById('bdx-update')) return;
-  const b = document.createElement('div');
-  b.id = 'bdx-update';
-  b.style.cssText = 'position:fixed;left:50%%;bottom:16px;transform:translateX(-50%%);z-index:99999;'
-    + 'background:#1f2937;color:#fff;padding:10px 14px;border-radius:10px;box-shadow:0 4px 18px rgba(0,0,0,.35);'
-    + 'font:14px system-ui,sans-serif;display:flex;gap:12px;align-items:center;max-width:calc(100%% - 32px)';
-  const t = document.createElement('span'); t.textContent = %s;
-  const a = document.createElement('a'); a.textContent = 'Herunterladen'; a.href = %s; a.target = '_blank';
-  a.style.cssText = 'color:#fbbf24;font-weight:600';
-  const x = document.createElement('button'); x.textContent = '✕'; x.title = 'Schließen';
-  x.style.cssText = 'background:none;border:0;color:#fff;cursor:pointer;font-size:15px';
-  x.onclick = () => b.remove();
-  b.append(t, a, x); document.body.appendChild(b);
-})();""" % (json.dumps(text), json.dumps(url))
-        window.evaluate_js(js)
+        ver = latest.lstrip("vV")
+        assets = {a.get("name"): a.get("browser_download_url") for a in rel.get("assets", [])}
+        name = update_asset_name(ver)
+        UPD.update(latest=ver, url=url, state="available",
+                   asset=(name, assets[name]) if name in assets else None, sums=assets.get("SHA256SUMS.txt"))
+        log.info("Neue Version verfuegbar: %s (installiert: %s, In-App-Update: %s)", ver, current, bool(UPD["asset"]))
+        window.evaluate_js(banner_js(ver, current, url, bool(UPD["asset"])))
     except Exception as e:  # noqa: BLE001  (offline o. ae. ist kein Fehler)
         log.info("Update-Pruefung uebersprungen: %s", e)
+
+
+def banner_js(ver, current, url, can_update):
+    """Hinweis unten in der App. Texte auf Deutsch, static/i18n.js uebersetzt sie wie den Rest der Oberflaeche."""
+    texts = {"new": f"Neue Version {ver} verfügbar (installiert: {current})", "now": "Jetzt aktualisieren",
+             "dl": "Herunterladen", "gh": "Auf GitHub öffnen", "close": "Schließen"}
+    return """(() => {
+  if (document.getElementById('ndx-update')) return;
+  const T = %(texts)s, URL = %(url)s, TOKEN = %(token)s, CAN = %(can)s;
+  const b = document.createElement('div');
+  b.id = 'ndx-update';
+  b.style.cssText = 'position:fixed;left:50%%;bottom:16px;transform:translateX(-50%%);z-index:99999;'
+    + 'background:#1f2937;color:#fff;padding:10px 14px;border-radius:10px;box-shadow:0 4px 18px rgba(0,0,0,.35);'
+    + 'font:14px system-ui,sans-serif;display:flex;gap:12px;align-items:center;flex-wrap:wrap;max-width:calc(100%% - 32px)';
+  const t = document.createElement('span'); t.textContent = T.new;
+  const link = (txt) => { const a = document.createElement('a'); a.textContent = txt; a.href = URL; a.target = '_blank';
+    a.style.cssText = 'color:#fbbf24;font-weight:600'; return a; };
+  const x = document.createElement('button'); x.textContent = '✕'; x.title = T.close;
+  x.style.cssText = 'all:unset;color:#fff;cursor:pointer;font:15px system-ui,sans-serif;padding:0 4px';
+  x.onclick = () => b.remove();
+  const go = document.createElement('button'); go.textContent = T.now;
+  go.style.cssText = 'all:unset;background:#fbbf24;color:#1f2937;border-radius:6px;padding:6px 12px;font:700 14px system-ui,sans-serif;cursor:pointer';
+  const poll = async () => {
+    let s; try { s = await (await fetch('/__desktop/update')).json(); } catch (e) { return setTimeout(poll, 1000); }
+    if (s.state === 'downloading') {
+      t.textContent = s.total ? 'Lade Update … ' + Math.floor(s.done * 100 / s.total) + ' %%' : 'Lade Update …';
+      return setTimeout(poll, 400);
+    }
+    if (s.state === 'installing') { t.textContent = 'Ninedex wird aktualisiert und startet gleich neu …'; x.remove(); return; }
+    if (s.state === 'manual') { t.textContent = s.msg; return; }
+    if (s.state === 'error') { t.textContent = 'Update fehlgeschlagen: ' + s.msg; b.insertBefore(link(T.gh), x); return; }
+    setTimeout(poll, 800);
+  };
+  go.onclick = async () => {
+    go.remove(); t.textContent = 'Lade Update …';
+    try { await fetch('/__desktop/update', {method: 'POST', headers: {'X-Ninedex-Token': TOKEN}}); } catch (e) {}
+    poll();
+  };
+  if (CAN) b.append(t, go, link(T.dl), x); else b.append(t, link(T.dl), x);
+  document.body.appendChild(b);
+})();""" % {"texts": json.dumps(texts), "url": json.dumps(url), "token": json.dumps(UPD_TOKEN), "can": "true" if can_update else "false"}
+
+
+def _download(url, dest):
+    tmp = dest + ".part"
+    with _gh(url, accept="application/octet-stream") as r, open(tmp, "wb") as f:
+        UPD["total"] = int(r.headers.get("Content-Length") or 0)
+        UPD["done"] = 0
+        while True:
+            chunk = r.read(256 * 1024)
+            if not chunk:
+                break
+            f.write(chunk)
+            UPD["done"] += len(chunk)
+    os.replace(tmp, dest)
+
+
+def _sha256(path):
+    import hashlib
+    h = hashlib.sha256()
+    with open(path, "rb") as f:
+        for chunk in iter(lambda: f.read(1024 * 1024), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
+def run_update(window, ddir):
+    """Laedt das Update, prueft es und startet die Installation (im Hintergrund-Thread)."""
+    name, url = UPD["asset"]
+    try:
+        UPD.update(state="downloading", msg="")
+        folder = os.path.join(ddir, "updates")
+        os.makedirs(folder, exist_ok=True)
+        for old in os.listdir(folder):  # alte Downloads aufraeumen
+            try:
+                os.remove(os.path.join(folder, old))
+            except OSError:
+                pass
+        dest = os.path.join(folder, name)
+        _download(url, dest)
+        if UPD["sums"]:
+            with _gh(UPD["sums"], accept="application/octet-stream") as r:
+                sums = r.read().decode("utf-8", "replace")
+            want = next((ln.split()[0].lower() for ln in sums.splitlines() if ln.strip().endswith(name)), None)
+            if not want or want != _sha256(dest):
+                raise RuntimeError("Prüfsumme stimmt nicht überein")
+        log.info("Update %s heruntergeladen und geprueft: %s", UPD["latest"], dest)
+        if sys.platform == "win32":
+            _install_windows(dest)
+        else:
+            _install_mac(dest, ddir)
+            if UPD["state"] == "manual":
+                return
+        UPD["state"] = "installing"
+        threading.Timer(1.5, window.destroy).start()  # App beenden, der Installer bzw. das Skript uebernimmt
+    except Exception as e:  # noqa: BLE001
+        log.exception("Update fehlgeschlagen")
+        UPD.update(state="error", msg=str(e) or e.__class__.__name__)
+
+
+def _install_windows(setup):
+    import subprocess
+    flags = getattr(subprocess, "DETACHED_PROCESS", 0) | getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+    # /update=1: der Installer behaelt die bisherige Sprachauswahl und startet Ninedex danach selbst
+    subprocess.Popen([setup, "/SILENT", "/SUPPRESSMSGBOXES", "/NORESTART", "/CLOSEAPPLICATIONS", "/update=1"],
+                     close_fds=True, creationflags=flags)
+
+
+MAC_SCRIPT = """#!/bin/bash
+# Ninedex-Update: wartet, bis die App beendet ist, ersetzt sie durch die Version aus dem DMG und startet sie neu
+PID="$1"; DMG="$2"; APP="$3"; LOG="$4"
+exec >>"$LOG" 2>&1
+echo "$(date) Update: warte auf Prozess $PID"
+for i in $(seq 1 120); do kill -0 "$PID" 2>/dev/null || break; sleep 0.5; done
+MNT="$(mktemp -d)"
+if ! hdiutil attach -nobrowse -readonly -mountpoint "$MNT" "$DMG"; then echo "DMG nicht lesbar"; open "$DMG"; exit 1; fi
+NEW="$(find "$MNT" -maxdepth 1 -name '*.app' | head -n 1)"
+if [ -z "$NEW" ]; then echo "keine App im DMG"; hdiutil detach "$MNT" -quiet; open "$DMG"; exit 1; fi
+rm -rf "$APP.update" && ditto "$NEW" "$APP.update" && rm -rf "$APP" && mv "$APP.update" "$APP"
+RC=$?
+hdiutil detach "$MNT" -quiet
+xattr -dr com.apple.quarantine "$APP" 2>/dev/null
+echo "$(date) Update fertig (rc=$RC), starte neu"
+open "$APP"
+"""
+
+
+def _install_mac(dmg, ddir):
+    import subprocess
+    app = mac_app_path()
+    parent = os.path.dirname(app) if app else None
+    if not app or not os.access(parent, os.W_OK) or not os.access(app, os.W_OK):
+        # Kein Schreibrecht (z. B. App von einem anderen Benutzer installiert): DMG zum manuellen Ersetzen oeffnen
+        subprocess.Popen(["open", dmg])
+        UPD.update(state="manual", msg="Das Update ist geöffnet: Ziehe Ninedex in den Ordner Programme (ersetzen) und starte es neu.")
+        return
+    script = os.path.join(ddir, "updates", "update.sh")
+    with open(script, "w", encoding="utf-8") as f:
+        f.write(MAC_SCRIPT)
+    os.chmod(script, 0o755)
+    subprocess.Popen(["/bin/bash", script, str(os.getpid()), dmg, app, os.path.join(ddir, "update.log")],
+                     start_new_session=True, close_fds=True)
 
 
 # ---------------------------------------------------------------- Start
@@ -267,6 +433,16 @@ def main():
                 except Exception as e:  # noqa: BLE001
                     log.warning("Fenster nach vorn holen fehlgeschlagen: %s", e)
             return "ok"
+
+        @backend.app.route("/__desktop/update", methods=["GET", "POST"])
+        def _desktop_update():
+            if backend.request.method == "POST":
+                if backend.request.headers.get("X-Ninedex-Token") != UPD_TOKEN:
+                    return backend.jsonify(ok=False), 403
+                if UPD["asset"] and UPD["state"] in ("available", "error"):
+                    threading.Thread(target=run_update, args=(window_ref["w"], ddir), name="update", daemon=True).start()
+                    UPD["state"] = "downloading"
+            return backend.jsonify({k: UPD[k] for k in ("state", "latest", "done", "total", "msg")})
 
         server = make_server(backend.app)
     except Exception as e:  # noqa: BLE001

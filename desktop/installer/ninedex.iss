@@ -103,6 +103,8 @@ Type: files; Name: "{app}\ninedex.ini"
 
 [Run]
 Filename: "{app}\{#MyAppExe}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent
+; Update aus der App heraus (still, mit /update=1): danach Ninedex wieder starten
+Filename: "{app}\{#MyAppExe}"; Flags: nowait; Check: IsAppUpdate
 
 [Code]
 const
@@ -111,6 +113,7 @@ const
 
 var
   LangPage, DefPage: TInputOptionWizardPage;
+  PrevLangs: String;
   DefCodes: array of String;
 
 function LangCode(i: Integer): String;
@@ -163,6 +166,7 @@ begin
     prev := GetIniString('ui', 'languages', '', AddBackslash(WizardForm.PrevAppDir) + 'ninedex.ini');
   if (prev = '') and (WizardForm.PrevAppDir <> '') then
     prev := GetIniString('ui', 'languages', '', AddBackslash(WizardForm.PrevAppDir) + 'binderdex.ini');
+  PrevLangs := prev;
   for i := 0 to NLANG - 1 do
     if prev <> '' then
       LangPage.Values[i] := Pos(LangCode(i), prev) > 0
@@ -211,11 +215,23 @@ begin
 end;
 
 { z. B. "en,de,es": die erste ist die Startsprache }
+{ Ninedex hat das Update selbst gestartet (Parameter /update=1) }
+function IsAppUpdate(): Boolean;
+begin
+  Result := ExpandConstant('{param:update|0}') = '1';
+end;
+
 function LangList(): String;
 var
   i: Integer;
   def: String;
 begin
+  { Stilles Update: bisherige Auswahl samt Reihenfolge (= Startsprache) unveraendert uebernehmen }
+  if WizardSilent() and (PrevLangs <> '') then
+  begin
+    Result := PrevLangs;
+    exit;
+  end;
   def := '';
   if (SelCount() >= 2) and (GetArrayLength(DefCodes) > 0) and (DefPage.SelectedValueIndex >= 0) then
     def := DefCodes[DefPage.SelectedValueIndex];

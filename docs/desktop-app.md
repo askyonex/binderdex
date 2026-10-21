@@ -25,7 +25,7 @@ Download from the [latest release](https://github.com/askyonex/ninedex/releases/
 
 The folder contains `pokedex.db` (your whole collection), `ninedex.log` (log file, useful for bug reports) and `webview/` (UI settings like theme and sounds).
 
-- **Updates** keep the folder. Just install the new version over the old one.
+- **Updates** keep the folder. When a new version is out, the app shows a hint with **Update now**: it downloads the new version, checks its SHA-256 checksum against the release and installs it (Windows: the installer runs silently and keeps your language choice; macOS: the app is replaced), then Ninedex restarts. You can still install a downloaded version over the old one by hand.
 - **Uninstalling on Windows** asks whether to keep the folder (default: keep).
 - **Backup:** the backup button in the app downloads a copy of the database, or copy `pokedex.db` while the app is closed.
 - **Moving from the web version:** close the app, replace `pokedex.db` in the folder with your existing database, start the app again.
@@ -38,7 +38,7 @@ The folder contains `pokedex.db` (your whole collection), `ninedex.log` (log fil
 - **Links** (Cardmarket, release page) and the printable **sales page** open in your normal browser. The sales page works there as long as the app is running.
 - **Downloads** (backup, Excel, CSV) open a save dialog.
 - Starting the app a second time just brings the open window to the front.
-- The app checks GitHub once per start for a newer release and shows a small hint. Nothing else is sent. Turn it off with `NINEDEX_NO_UPDATE_CHECK=1`.
+- The app checks GitHub once per start for a newer release and shows a small hint (see *Updates* above). Nothing else is sent. Turn it off with `NINEDEX_NO_UPDATE_CHECK=1`. On macOS the in-app update needs write access to the app (normally given in *Applications*); otherwise it opens the DMG so you can replace the app yourself.
 - The app uses the fixed local port `47821` (so UI settings survive restarts). If another program uses it, a free port is used for that session.
 - **Phone access** is not part of the desktop app. For that, run Ninedex on a server or Raspberry Pi ([self-hosting.md](self-hosting.md)).
 - **AI camera help** (Ollama) is still installed separately, see [ai-scan.md](ai-scan.md).
@@ -54,7 +54,7 @@ python desktop/ninedex_desktop.py          # NINEDEX_DEBUG=1 enables the dev too
 
 | File | Purpose |
 | ---- | ------- |
-| `desktop/ninedex_desktop.py` | Launcher: data folder, backend thread, window, single instance, update hint |
+| `desktop/ninedex_desktop.py` | Launcher: data folder, backend thread, window, single instance, update check and in-app update |
 | `desktop/ninedex.spec` | PyInstaller build (Windows program folder / macOS `.app` with camera permission text) |
 | `desktop/make_icons.py` | Builds `icon.ico` / `icon.icns` from `static/icon-512.png` |
 | `desktop/installer/ninedex.iss` | Inno Setup script for the Windows installer |

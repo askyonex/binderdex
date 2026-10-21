@@ -224,6 +224,16 @@ EXTRA = [
     "KI-Dienst nicht erreichbar. Internetverbindung des Servers pruefen.",
     # kurze, kleingeschriebene Texte, die der Filter fuer Code-Strings sonst verwirft
     "gefangen", "ab Nr.", "Nr.", "Nr. {0}", "Nr. {0} {1}", "blauen", "gelben", "nicht scharf", "lohnt es sich", "bis",
+    # Update-Hinweis der Desktop-App (desktop/ninedex_desktop.py)
+    "Jetzt aktualisieren",
+    "Auf GitHub öffnen",
+    "Lade Update …",
+    "Lade Update … {0} %",
+    "Ninedex wird aktualisiert und startet gleich neu …",
+    "Update fehlgeschlagen: {0}",
+    "Prüfsumme stimmt nicht überein",
+    "Das Update ist geöffnet: Ziehe Ninedex in den Ordner Programme (ersetzen) und starte es neu.",
+    "Neue Version {0} verfügbar (installiert: {1})", "Herunterladen",
     "keine", "Ja", ", ca.", "billiger", "teurer", "rechts", "links", "invers", "frei", "KI:", "{0} gefangen",
 ]
 

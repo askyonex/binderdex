@@ -25,7 +25,7 @@ Download aus dem [neuesten Release](https://github.com/askyonex/ninedex/releases
 
 Darin liegen `pokedex.db` (deine komplette Sammlung), `ninedex.log` (Protokoll, hilfreich bei Fehlermeldungen) und `webview/` (Einstellungen der Oberfläche wie Design und Töne).
 
-- **Updates** lassen den Ordner unangetastet. Neue Version einfach über die alte installieren.
+- **Updates** lassen den Ordner unangetastet. Gibt es eine neue Version, zeigt die App einen Hinweis mit **Jetzt aktualisieren**: Sie lädt die neue Version herunter, prüft die SHA-256-Prüfsumme aus dem Release und installiert sie (Windows: Installer läuft still und behält die Sprachauswahl, macOS: die App wird ersetzt), danach startet Ninedex neu. Eine heruntergeladene Version von Hand über die alte zu installieren, geht weiterhin.
 - **Deinstallieren unter Windows** fragt, ob der Ordner bleiben soll (Standard: behalten).
 - **Sicherung:** Der Backup-Knopf in der App lädt eine Kopie der Datenbank herunter, oder `pokedex.db` bei geschlossener App kopieren.
 - **Umzug von der Web-Version:** App schließen, `pokedex.db` im Ordner durch deine bestehende Datenbank ersetzen, App wieder starten.
@@ -38,7 +38,7 @@ Darin liegen `pokedex.db` (deine komplette Sammlung), `ninedex.log` (Protokoll, 
 - **Links** (Cardmarket, Release-Seite) und die druckbare **Verkaufsseite** öffnen sich im normalen Browser. Die Verkaufsseite funktioniert dort, solange die App läuft.
 - **Downloads** (Backup, Excel, CSV) öffnen einen Speichern-Dialog.
 - Ein zweiter Start holt nur das offene Fenster nach vorn.
-- Die App schaut bei jedem Start einmal bei GitHub nach einer neueren Version und zeigt dann einen kleinen Hinweis. Sonst wird nichts gesendet. Abschalten mit `NINEDEX_NO_UPDATE_CHECK=1`.
+- Die App schaut bei jedem Start einmal bei GitHub nach einer neueren Version und zeigt dann einen kleinen Hinweis (siehe *Updates* oben). Sonst wird nichts gesendet. Abschalten mit `NINEDEX_NO_UPDATE_CHECK=1`. Unter macOS braucht das Update aus der App Schreibrecht auf die App (in *Programme* normalerweise gegeben), sonst öffnet sie das DMG zum Ersetzen von Hand.
 - Die App nutzt den festen lokalen Port `47821` (damit Einstellungen der Oberfläche einen Neustart überleben). Belegt ein anderes Programm den Port, nimmt sie für diese Sitzung einen freien.
 - **Zugriff vom Handy** gehört nicht zur Desktop-App. Dafür Ninedex auf einem Server oder Raspberry Pi betreiben ([selbst-hosten.md](selbst-hosten.md)).
 - Die **KI-Hilfe für die Kamera** (Ollama) wird weiterhin separat installiert, siehe [ki-scan.md](ki-scan.md).
@@ -54,7 +54,7 @@ python desktop/ninedex_desktop.py          # NINEDEX_DEBUG=1 schaltet die Entwic
 
 | Datei | Aufgabe |
 | ----- | ------- |
-| `desktop/ninedex_desktop.py` | Starter: Datenordner, Backend-Thread, Fenster, Einzelinstanz, Update-Hinweis |
+| `desktop/ninedex_desktop.py` | Starter: Datenordner, Backend-Thread, Fenster, Einzelinstanz, Update-Prüfung und Update aus der App |
 | `desktop/ninedex.spec` | PyInstaller-Bauplan (Windows-Programmordner / macOS-`.app` mit Kamera-Erlaubnistext) |
 | `desktop/make_icons.py` | Erzeugt `icon.ico` / `icon.icns` aus `static/icon-512.png` |
 | `desktop/installer/ninedex.iss` | Inno-Setup-Skript für den Windows-Installer |

@@ -23,7 +23,7 @@ DB = os.environ.get("DB_PATH", "pokedex.db")  # fuer Docker: /data/pokedex.db
 TCG = "https://api.tcgdex.net/v2"
 POKE = "https://pokeapi.co/api/v2"
 LANGS = ["de", "en", "ja"]
-I18N_VERSION = "2"  # bei geaenderten Uebersetzungen erhoehen, damit Browser das neue Woerterbuch laden
+I18N_VERSION = "3"  # bei geaenderten Uebersetzungen erhoehen, damit Browser das neue Woerterbuch laden
 
 app = Flask(__name__, static_folder="static")
 progress = {"done": 0, "total": 0, "running": False}
