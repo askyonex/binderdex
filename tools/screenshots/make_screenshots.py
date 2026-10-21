@@ -127,13 +127,13 @@ def seed(db, csvdir):
             qty = 1 + (rnd.random() < 0.25) + (rnd.random() < 0.08)
             variant = "reverse" if rar[0] in ("Häufig", "Ungewöhnlich") and rnd.random() < 0.2 else None
             draw[cid] = names[(dex, "en")] + suffix if lang == "ja" else None
-            cards.append((cid, base + suffix, sname, f"{num:03d}", rar[0], f"https://demo.binderdex.invalid/card/{cid}.png", dex, qty, lang,
+            cards.append((cid, base + suffix, sname, f"{num:03d}", rar[0], f"https://demo.ninedex.invalid/card/{cid}.png", dex, qty, lang,
                           price, "Pokemon", added, added, round(price * rnd.uniform(0.75, 1.3), 2), variant, sid))
             cur = binder.get(dex)
             if cur is None or (rar[0] in FULLART and cur[1] not in FULLART):
                 binder[dex] = (cid, rar[0])
     for i, (nm, sid) in enumerate((("Professor-Forschung", "sv01"), ("Pokéball", "sv01"), ("Supercapsule", "sv02"), ("Arven", "sv01"))):
-        cards.append((f"{sid}-t{i}", nm, "Karmesin & Purpur", f"{180 + i}", "Ungewöhnlich", f"https://demo.binderdex.invalid/card/{sid}-t{i}.png",
+        cards.append((f"{sid}-t{i}", nm, "Karmesin & Purpur", f"{180 + i}", "Ungewöhnlich", f"https://demo.ninedex.invalid/card/{sid}-t{i}.png",
                       None, 2 + i, "de", 0.12, "Trainer", today.isoformat(), today.isoformat(), 0.1, None, sid))
     for c in cards:
         con.execute("""INSERT OR IGNORE INTO cards(id,name,set_name,local_id,rarity,image,dex_id,qty,lang,price,category,added,px_at,price_old,variant)
@@ -145,14 +145,14 @@ def seed(db, csvdir):
     for dex, sname, rar, price in ((150, "151", "Selten, besondere Illustration", 89.0), (384, "Gewalten der Zeit", "Hyperselten", 34.5),
                                    (94, "Paldeas Schicksale", "Selten, Illustration", 21.0)):
         con.execute("INSERT INTO wishlist VALUES(?,?,?,?,?,?,?,?,?,?,?,?)", (f"w-{dex}", names[(dex, "de")] + " ex", sname, "sv", "201", rar,
-                    f"https://demo.binderdex.invalid/card/w-{dex}.png", dex, "de", price, today.isoformat(), price * 1.15))
+                    f"https://demo.ninedex.invalid/card/w-{dex}.png", dex, "de", price, today.isoformat(), price * 1.15))
     side = [c for c in cards if c[0] not in {b[0] for b in binder.values()}][:6]
     for c in side[:3]:
         con.execute("INSERT INTO listings(card_id,qty,price,cond,status,ts) VALUES(?,?,?,?,?,?)", (c[0], 1, round(c[9] * 0.95, 2), "NM", "listed", today.isoformat()))
     con.execute("INSERT INTO listings(card_id,qty,price,cond,status,ts,done_ts) VALUES(?,?,?,?,?,?,?)", (side[3][0], 1, 4.5, "NM", "sold", today.isoformat(), today.isoformat()))
     star = binder[6][0]
     con.execute("""INSERT INTO grades(ts,card_id,name,set_name,image,best,low,high,limiting,conf,cen_f,cen_b,subs,notes,raw_price)
-                   VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", (today.isoformat(), star, "Glurak ex", "Obsidianflammen", f"https://demo.binderdex.invalid/card/{star}.png",
+                   VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", (today.isoformat(), star, "Glurak ex", "Obsidianflammen", f"https://demo.ninedex.invalid/card/{star}.png",
                                                             9, 8, 10, "Ecken", "hoch", 54.0, 61.0, json.dumps({"Ecken": 9, "Kanten": 9.5, "Oberfläche": 9.5}), "", 62.0))
     total = len(binder)
     for d in range(60, -1, -1):
@@ -268,7 +268,7 @@ def run(args):
 
     env = dict(os.environ, DB_PATH=db, PORT=str(PORT), HTTPS_PROXY="http://127.0.0.1:9", https_proxy="http://127.0.0.1:9",
                HTTP_PROXY="http://127.0.0.1:9", PYTHONUNBUFFERED="1")
-    env.pop("BINDERDEX_LANGS", None)
+    env.pop("NINEDEX_LANGS", None)
     srv = subprocess.Popen([sys.executable, "app.py"], cwd=ROOT, env=env, stdout=open(os.path.join(args.work, "server.log"), "w"), stderr=subprocess.STDOUT)
     for _ in range(80):
         try:

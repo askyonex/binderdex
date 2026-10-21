@@ -40,23 +40,23 @@ jobs:
       - name: Symbole und Programm bauen
         run: |
           python desktop/make_icons.py
-          pyinstaller desktop/binderdex.spec --noconfirm --clean
+          pyinstaller desktop/ninedex.spec --noconfirm --clean
 
       - name: Starttest (Programm muss 30 Sekunden laufen und antworten)
         shell: pwsh
         run: |
-          $env:BINDERDEX_DATA_DIR = "$env:RUNNER_TEMP\bdx"
-          $env:BINDERDEX_NO_UPDATE_CHECK = "1"
-          $p = Start-Process -FilePath "dist\BinderDex\BinderDex.exe" -PassThru
+          $env:NINEDEX_DATA_DIR = "$env:RUNNER_TEMP\bdx"
+          $env:NINEDEX_NO_UPDATE_CHECK = "1"
+          $p = Start-Process -FilePath "dist\Ninedex\Ninedex.exe" -PassThru
           Start-Sleep -Seconds 30
           $ok = -not $p.HasExited
           try { Invoke-WebRequest -UseBasicParsing http://127.0.0.1:47821/api/i18n -TimeoutSec 5 | Out-Null } catch { $ok = $false }
           if (-not $p.HasExited) { Stop-Process -Id $p.Id -Force }
           if (-not $ok) {
-            Get-Content "$env:BINDERDEX_DATA_DIR\binderdex.log", "$env:BINDERDEX_DATA_DIR\crash.log" -ErrorAction SilentlyContinue
+            Get-Content "$env:NINEDEX_DATA_DIR\ninedex.log", "$env:NINEDEX_DATA_DIR\crash.log" -ErrorAction SilentlyContinue
             Get-WinEvent -FilterHashtable @{LogName='Application'; StartTime=(Get-Date).AddMinutes(-3)} -ErrorAction SilentlyContinue |
-              Where-Object { $_.Message -match 'BinderDex' } | Select-Object -First 2 | ForEach-Object { $_.Message }
-            Write-Output "::error::BinderDex.exe ist beim Start abgestuerzt (Details im Log dieses Schritts)"
+              Where-Object { $_.Message -match 'Ninedex' } | Select-Object -First 2 | ForEach-Object { $_.Message }
+            Write-Output "::error::Ninedex.exe ist beim Start abgestuerzt (Details im Log dieses Schritts)"
             exit 1
           }
 
@@ -67,7 +67,7 @@ jobs:
         shell: pwsh
         run: |
           $iscc = Join-Path ${env:ProgramFiles(x86)} "Inno Setup 6\ISCC.exe"
-          & $iscc "/DMyAppVersion=$env:VERSION" desktop\installer\binderdex.iss
+          & $iscc "/DMyAppVersion=$env:VERSION" desktop\installer\ninedex.iss
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - uses: actions/upload-artifact@v4
@@ -107,7 +107,7 @@ jobs:
       - name: Symbole und App bauen
         run: |
           python desktop/make_icons.py
-          pyinstaller desktop/binderdex.spec --noconfirm --clean
+          pyinstaller desktop/ninedex.spec --noconfirm --clean
 
       - name: DMG bauen
         run: bash desktop/make_dmg.sh "$VERSION" "${{ matrix.arch }}"

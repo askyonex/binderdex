@@ -1,5 +1,5 @@
 #!/bin/bash
-# Binderdex database backup
+# Ninedex database backup
 #   1) local copy (consistent, safe while the app is running), keeps the last KEEP_LOCAL
 #   2) optional copy to a mounted network share (e.g. a NAS), keeps the last KEEP_NAS
 #
@@ -7,15 +7,15 @@
 #   DB_FILE     path to the SQLite database      (default: ./data/pokedex.db)
 #   BACKUP_DIR  local backup folder              (default: ./backups)
 #   NAS_MOUNT   mount point of the share         (default: empty = skip the NAS step)
-#   NAS_SUBDIR  folder inside the share          (default: binderdex)
+#   NAS_SUBDIR  folder inside the share          (default: ninedex)
 #
 # Example cron job (daily at 03:15, as root if the share must be mounted):
-#   15 3 * * * DB_FILE=/srv/binderdex/data/pokedex.db BACKUP_DIR=/srv/binderdex/backups NAS_MOUNT=/mnt/nas /srv/binderdex/scripts/backup.sh
+#   15 3 * * * DB_FILE=/srv/ninedex/data/pokedex.db BACKUP_DIR=/srv/ninedex/backups NAS_MOUNT=/mnt/nas /srv/ninedex/scripts/backup.sh
 
 DB_FILE="${DB_FILE:-./data/pokedex.db}"
 BACKUP_DIR="${BACKUP_DIR:-./backups}"
 NAS_MOUNT="${NAS_MOUNT:-}"
-NAS_DIR="$NAS_MOUNT/${NAS_SUBDIR:-binderdex}"
+NAS_DIR="$NAS_MOUNT/${NAS_SUBDIR:-ninedex}"
 KEEP_LOCAL="${KEEP_LOCAL:-14}"
 KEEP_NAS="${KEEP_NAS:-60}"
 LOG="$BACKUP_DIR/backup.log"

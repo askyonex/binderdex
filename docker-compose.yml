@@ -1,14 +1,14 @@
 # Minimal setup. Start with:  docker compose up -d --build
 services:
-  binderdex:
+  ninedex:
     build: .
-    container_name: binderdex
+    container_name: ninedex
     restart: unless-stopped
     environment:
       TZ: "Europe/Berlin"
       # Languages of the app (de, en, es), the first one is the default for new devices.
       # Without it the app asks on the first start; it can be changed in the app anytime.
-      # BINDERDEX_LANGS: "de,en,es"
+      # NINEDEX_LANGS: "de,en,es"
       # Optional AI help for the camera (can also be set in the app, see docs/ai-scan.md):
       # AI_PROVIDER: "ollama"
       # OLLAMA_URL: "http://192.168.0.50:11434"

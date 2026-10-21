@@ -1,6 +1,6 @@
 # Self-hosting
 
-Binderdex needs very little: a Raspberry Pi 4 (2 GB is enough), a mini PC, a NAS with Docker or any always-on computer. The text recognition runs in the browser, the server only does light work.
+Ninedex needs very little: a Raspberry Pi 4 (2 GB is enough), a mini PC, a NAS with Docker or any always-on computer. The text recognition runs in the browser, the server only does light work.
 
 ## 1. Run it locally (no Docker)
 
@@ -22,7 +22,7 @@ The compose file only publishes the port on `127.0.0.1`. To use the app from oth
 ## 3. Raspberry Pi
 
 1. Install a 64-bit Raspberry Pi OS, then Docker: `curl -fsSL https://get.docker.com | sh` and `sudo usermod -aG docker $USER` (log in again).
-2. `git clone https://github.com/askyonex/binderdex.git && cd binderdex`
+2. `git clone https://github.com/askyonex/ninedex.git && cd ninedex`
 3. `docker compose up -d --build`
 
 The container restarts automatically after a reboot (`restart: unless-stopped`).
@@ -33,7 +33,7 @@ Note: the Docker image installs `openpyxl` and `pillow` (from `requirements.txt`
 
 Browsers only allow camera access on `https://` pages or on `localhost`. A simple way at home is Caddy with its own small certificate authority.
 
-1. **DNS name:** create a local DNS record that points a name such as `binderdex.home.arpa` to the IP of your server (router, Pi-hole, AdGuard Home ...). Do not use `.local`.
+1. **DNS name:** create a local DNS record that points a name such as `ninedex.home.arpa` to the IP of your server (router, Pi-hole, AdGuard Home ...). Do not use `.local`.
 2. **Caddy:** copy `docs/examples/docker-compose.https.yml` and `docs/examples/Caddyfile.example` next to the Dockerfile (rename the second to `Caddyfile`, adjust the name) and start `docker compose -f docker-compose.https.yml up -d --build`.
 3. **Trust the certificate on every device.** Export the root certificate:
    ```bash
@@ -44,7 +44,7 @@ Browsers only allow camera access on `https://` pages or on `localhost`. A simpl
    - **Android:** *Settings > Security > Encryption & credentials > Install a certificate > CA certificate*.
    - **macOS:** double-click, add to Keychain, set to *Always Trust*.
    - **Windows:** double-click, *Install Certificate*, store in *Trusted Root Certification Authorities* (local computer), restart the browser.
-4. Open `https://binderdex.home.arpa`. No warning should appear.
+4. Open `https://ninedex.home.arpa`. No warning should appear.
 
 Keep the `caddy_data` volume in your backups. If it is lost, Caddy creates a new certificate authority and the certificate has to be installed on all devices again.
 
@@ -61,7 +61,7 @@ Your whole collection is one SQLite file (`data/pokedex.db`). Three ways to back
 - **In the app:** *Statistik > Datenbank sichern* downloads a consistent copy.
 - **Script:** `scripts/backup.sh` creates a daily backup (safe while the app runs) and optionally copies it to a mounted network share. Example cron job (daily 03:15):
   ```
-  15 3 * * * DB_FILE=/home/pi/binderdex/data/pokedex.db BACKUP_DIR=/home/pi/binderdex/backups /home/pi/binderdex/scripts/backup.sh
+  15 3 * * * DB_FILE=/home/pi/ninedex/data/pokedex.db BACKUP_DIR=/home/pi/ninedex/backups /home/pi/ninedex/scripts/backup.sh
   ```
   For a NAS share add `NAS_MOUNT=/mnt/nas` (and mount it, for example with an `/etc/fstab` entry using `cifs` and `credentials=`). If the share is mounted by root, run the cron job as root.
 - **Restore:** stop the app, copy a backup over `data/pokedex.db`, start the app.

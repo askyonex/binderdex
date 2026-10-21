@@ -1,7 +1,9 @@
-# Binderdex
+# Ninedex
 
 **Selbst gehostete Web-App, um deine Pokémon-Kartensammlung zu digitalisieren, zu bewerten und zu verwalten.**
 Die Grundidee: **eine Karte pro Pokémon im Binder** (ein Pokédex aus Karten), alles andere landet im Nebenstapel, den du verkaufen oder tauschen kannst.
+
+> **Früher hieß das Projekt Binderdex.** Bestehende Desktop-Installationen lassen sich normal aktualisieren, deine Sammlung wird beim ersten Start automatisch übernommen.
 
 > **Inoffizielles Fan-Projekt.** Nicht mit The Pokémon Company, Nintendo, Creatures oder Game Freak verbunden oder von ihnen unterstützt. Siehe [Rechtliche Hinweise](#rechtliche-hinweise).
 >
@@ -9,7 +11,7 @@ Die Grundidee: **eine Karte pro Pokémon im Binder** (ein Pokédex aus Karten), 
 
 Kein Konto, keine Cloud, kein API-Schlüssel. Die App läuft als Desktop-App unter Windows und macOS oder als Web-App auf deinem PC, einem Raspberry Pi oder einem kleinen Server, deine Daten liegen in einer einzigen SQLite-Datei.
 
-![Binderdex: Pokédex mit einer Karte pro Pokémon](docs/screenshots/pokedex-de.png)
+![Ninedex: Pokédex mit einer Karte pro Pokémon](docs/screenshots/pokedex-de.png)
 
 ## Screenshots
 
@@ -62,26 +64,26 @@ Kein Konto, keine Cloud, kein API-Schlüssel. Die App läuft als Desktop-App unt
 
 ## Download: Desktop-App (Windows / macOS)
 
-Der einfachste Weg, ohne Python und ohne Terminal. Lade die Datei für dein System aus dem [neuesten Release](https://github.com/askyonex/binderdex/releases/latest):
+Der einfachste Weg, ohne Python und ohne Terminal. Lade die Datei für dein System aus dem [neuesten Release](https://github.com/askyonex/ninedex/releases/latest):
 
 | System | Datei |
 | ------ | ----- |
-| Windows 10 / 11 (64 Bit) | `BinderDex-Setup-x.y.z.exe` |
-| Mac mit Apple-Chip (M1 oder neuer) | `BinderDex-x.y.z-macOS-arm64.dmg` |
-| Mac mit Intel-Prozessor | `BinderDex-x.y.z-macOS-x86_64.dmg` |
+| Windows 10 / 11 (64 Bit) | `Ninedex-Setup-x.y.z.exe` |
+| Mac mit Apple-Chip (M1 oder neuer) | `Ninedex-x.y.z-macOS-arm64.dmg` |
+| Mac mit Intel-Prozessor | `Ninedex-x.y.z-macOS-x86_64.dmg` |
 
 **Windows:** Installer starten (keine Administratorrechte nötig). Da die App nicht signiert ist, zeigt Windows eventuell *„Der Computer wurde durch Windows geschützt"*: **Weitere Informationen → Trotzdem ausführen**.
-**macOS:** DMG öffnen und BinderDex auf *Applications* (Programme) ziehen. Beim ersten Start blockiert macOS die App, weil sie nicht von Apple beglaubigt ist: **Systemeinstellungen → Datenschutz & Sicherheit**, nach unten scrollen, **Dennoch öffnen** (nur einmal nötig).
+**macOS:** DMG öffnen und Ninedex auf *Applications* (Programme) ziehen. Beim ersten Start blockiert macOS die App, weil sie nicht von Apple beglaubigt ist: **Systemeinstellungen → Datenschutz & Sicherheit**, nach unten scrollen, **Dennoch öffnen** (nur einmal nötig).
 
-Der Installer fragt, welche Sprachen die App haben soll (Deutsch, Englisch, Spanisch). Die Desktop-App ist dieselbe App in einem eigenen Fenster, der Kamera-Scan funktioniert mit der Webcam. Deine Sammlung liegt pro Benutzer (Windows: `%APPDATA%\BinderDex`, macOS: `~/Library/Application Support/BinderDex`) und bleibt bei Updates und (wenn du willst) auch beim Deinstallieren erhalten. Die App meldet sich, wenn es eine neue Version gibt. Details: [docs/desktop-app.de.md](docs/desktop-app.de.md)
+Der Installer fragt, welche Sprachen die App haben soll (Deutsch, Englisch, Spanisch). Die Desktop-App ist dieselbe App in einem eigenen Fenster, der Kamera-Scan funktioniert mit der Webcam. Deine Sammlung liegt pro Benutzer (Windows: `%APPDATA%\Ninedex`, macOS: `~/Library/Application Support/Ninedex`) und bleibt bei Updates und (wenn du willst) auch beim Deinstallieren erhalten. Die App meldet sich, wenn es eine neue Version gibt. Details: [docs/desktop-app.de.md](docs/desktop-app.de.md)
 
 ## Schnellstart
 
 Voraussetzungen: Python 3.10+ und ein aktueller Browser. Eine Internetverbindung ist nötig (Kartendaten, Bilder, Preise).
 
 ```bash
-git clone https://github.com/askyonex/binderdex.git
-cd binderdex
+git clone https://github.com/askyonex/ninedex.git
+cd ninedex
 python -m venv venv
 source venv/bin/activate          # Windows: venv\Scripts\activate
 pip install -r requirements.txt

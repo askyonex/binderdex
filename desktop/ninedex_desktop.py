@@ -1,16 +1,17 @@
-"""BinderDex als Desktop-App.
+"""Ninedex als Desktop-App.
 
 Startet das Flask-Backend unsichtbar im Hintergrund (nur auf 127.0.0.1) und zeigt die
 Oberflaeche in einem eigenen Fenster (pywebview: Windows = WebView2/Edge, macOS = WebKit).
 
 Entwicklung (aus dem Repo-Ordner):
     pip install -r requirements.txt -r desktop/requirements-desktop.txt
-    python desktop/binderdex_desktop.py
+    python desktop/ninedex_desktop.py
 
 Umgebungsvariablen (optional):
-    BINDERDEX_DATA_DIR          eigener Datenordner statt des Standardordners
-    BINDERDEX_NO_UPDATE_CHECK=1 keine Pruefung auf neue Versionen bei GitHub
-    BINDERDEX_DEBUG=1           Entwicklerwerkzeuge im Fenster (Rechtsklick > Untersuchen)
+    NINEDEX_DATA_DIR          eigener Datenordner statt des Standardordners
+    NINEDEX_NO_UPDATE_CHECK=1 keine Pruefung auf neue Versionen bei GitHub
+    NINEDEX_DEBUG=1           Entwicklerwerkzeuge im Fenster (Rechtsklick > Untersuchen)
+Die alten Namen (BINDERDEX_*) aus der Zeit vor der Umbenennung funktionieren weiterhin.
 """
 import json
 import logging
@@ -20,17 +21,23 @@ import sys
 import threading
 import urllib.request
 
-APP_NAME = "BinderDex"
-REPO = "askyonex/binderdex"
+APP_NAME = "Ninedex"
+OLD_APP_NAME = "BinderDex"  # frueherer Name, Daten von dort werden beim ersten Start uebernommen
+REPO = "askyonex/ninedex"
 # Fester Port, damit Browser-Einstellungen (Design, Toene, Quiz-Rekord ...) erhalten bleiben:
 # der Browser speichert sie pro Adresse inklusive Port.
 PREFERRED_PORT = 47821
 HOST = "127.0.0.1"
 
-log = logging.getLogger("binderdex.desktop")
+log = logging.getLogger("ninedex.desktop")
 
 
 # ---------------------------------------------------------------- Pfade
+
+def env(name, default=None):
+    """NINEDEX_<name>, sonst der alte Name BINDERDEX_<name> (vor der Umbenennung)."""
+    return os.environ.get("NINEDEX_" + name) or os.environ.get("BINDERDEX_" + name) or default
+
 
 def resource_dir():
     """Ordner mit app.py, static/ und VERSION (im fertigen Programm: der entpackte Bundle-Ordner)."""
@@ -41,18 +48,29 @@ def resource_dir():
 
 def data_dir():
     """Pro Benutzer beschreibbarer Ordner fuer Datenbank, Log und Browser-Speicher."""
-    custom = os.environ.get("BINDERDEX_DATA_DIR")
+    custom = env("DATA_DIR")
     if custom:
-        path = custom
-    elif sys.platform == "win32":
-        path = os.path.join(os.environ.get("APPDATA") or os.path.expanduser("~"), APP_NAME)
-    elif sys.platform == "darwin":
-        path = os.path.expanduser(f"~/Library/Application Support/{APP_NAME}")
-    else:
-        base = os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share")
-        path = os.path.join(base, APP_NAME.lower())
+        os.makedirs(custom, exist_ok=True)
+        return custom
+    path = default_data_dir(APP_NAME)
+    old = default_data_dir(OLD_APP_NAME)
+    # Umbenennung BinderDex -> Ninedex: vorhandene Sammlung einmalig in den neuen Ordner verschieben
+    if not os.path.exists(path) and os.path.isdir(old):
+        try:
+            os.rename(old, path)
+        except OSError:
+            path = old  # z. B. Ordner gerade gesperrt: dann einfach den alten Ordner weiterbenutzen
     os.makedirs(path, exist_ok=True)
     return path
+
+
+def default_data_dir(name):
+    if sys.platform == "win32":
+        return os.path.join(os.environ.get("APPDATA") or os.path.expanduser("~"), name)
+    if sys.platform == "darwin":
+        return os.path.expanduser(f"~/Library/Application Support/{name}")
+    base = os.environ.get("XDG_DATA_HOME") or os.path.expanduser("~/.local/share")
+    return os.path.join(base, name.lower())
 
 
 def app_version():
@@ -64,12 +82,12 @@ def app_version():
 
 
 def installer_langs():
-    """Sprachen aus binderdex.ini im Programmordner (schreibt der Windows-Installer)."""
+    """Sprachen aus ninedex.ini im Programmordner (schreibt der Windows-Installer)."""
     import configparser
     base = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else resource_dir()
     ini = configparser.ConfigParser()
     try:
-        ini.read(os.path.join(base, "binderdex.ini"), encoding="utf-8")
+        ini.read([os.path.join(base, "binderdex.ini"), os.path.join(base, "ninedex.ini")], encoding="utf-8")
         raw = ini.get("ui", "languages", fallback="")
     except (OSError, configparser.Error):
         return ""
@@ -77,9 +95,9 @@ def installer_langs():
 
 
 def setup_logging(ddir):
-    """Protokoll in binderdex.log; Abstuerze ausserhalb von Python (z. B. im Fenster) landen in crash.log."""
+    """Protokoll in ninedex.log; Abstuerze ausserhalb von Python (z. B. im Fenster) landen in crash.log."""
     # Im Fenster-Modus (ohne Konsole) sind stdout/stderr unter Windows None -> ins Log umleiten
-    logfile = os.path.join(ddir, "binderdex.log")
+    logfile = os.path.join(ddir, "ninedex.log")
     handler = logging.handlers.RotatingFileHandler(logfile, maxBytes=1_000_000, backupCount=2, encoding="utf-8")
     handler.setFormatter(logging.Formatter("%(asctime)s %(levelname)s %(name)s: %(message)s"))
     root = logging.getLogger()
@@ -97,7 +115,7 @@ def setup_logging(ddir):
     except Exception:  # noqa: BLE001
         pass
     # Fehler in Hintergrund-Threads (Preise, Bilder ...) ebenfalls ins Log
-    threading.excepthook = lambda a: logging.getLogger("binderdex.thread").error(
+    threading.excepthook = lambda a: logging.getLogger("ninedex.thread").error(
         "Fehler im Thread %s", a.thread.name if a.thread else "?", exc_info=(a.exc_type, a.exc_value, a.exc_traceback))
     return logfile
 
@@ -105,7 +123,7 @@ def setup_logging(ddir):
 # ---------------------------------------------------------------- Nur eine Instanz
 
 class SingleInstance:
-    """Sperrdatei im Datenordner. Laeuft BinderDex schon, holt ein zweiter Start nur das Fenster nach vorn."""
+    """Sperrdatei im Datenordner. Laeuft Ninedex schon, holt ein zweiter Start nur das Fenster nach vorn."""
 
     def __init__(self, ddir):
         self.path = os.path.join(ddir, "instance.lock")
@@ -165,7 +183,7 @@ def _ver_tuple(v):
 
 
 def check_update(window, current):
-    if os.environ.get("BINDERDEX_NO_UPDATE_CHECK") or current == "0.0.0":
+    if env("NO_UPDATE_CHECK") or current == "0.0.0":
         return
     try:
         req = urllib.request.Request(f"https://api.github.com/repos/{REPO}/releases/latest",
@@ -199,9 +217,9 @@ def check_update(window, current):
 
 # ---------------------------------------------------------------- Start
 
-ERROR_HTML = """<!doctype html><meta charset="utf-8"><title>BinderDex</title>
+ERROR_HTML = """<!doctype html><meta charset="utf-8"><title>Ninedex</title>
 <body style="font:15px system-ui,sans-serif;padding:32px;max-width:640px">
-<h2>BinderDex konnte nicht starten</h2><p>%s</p>
+<h2>Ninedex konnte nicht starten</h2><p>%s</p>
 <p>Details stehen in der Protokolldatei:<br><code>%s</code></p></body>"""
 
 
@@ -209,7 +227,7 @@ def main():
     ddir = data_dir()
     logfile = setup_logging(ddir)
     version = app_version()
-    log.info("BinderDex %s startet, Datenordner: %s", version, ddir)
+    log.info("Ninedex %s startet, Datenordner: %s", version, ddir)
 
     import webview  # erst hier, damit Fehler im Log landen
 
@@ -219,12 +237,12 @@ def main():
             return 0
         log.warning("Sperre belegt, aber keine Instanz erreichbar. Starte trotzdem.")
 
-    # Sprachauswahl aus dem Windows-Installer (binderdex.ini neben dem Programm), z. B. "en,de":
+    # Sprachauswahl aus dem Windows-Installer (ninedex.ini neben dem Programm), z. B. "en,de":
     # die erste ist die Startsprache. app.py uebernimmt sie, sobald sie sich aendert; ohne Datei
     # (macOS, Entwicklung) fragt die App beim ersten Start selbst.
     langs = installer_langs()
-    if langs and not os.environ.get("BINDERDEX_LANGS"):
-        os.environ["BINDERDEX_LANGS"] = langs
+    if langs and not env("LANGS"):
+        os.environ["NINEDEX_LANGS"] = langs
         log.info("Sprachen aus dem Installer: %s", langs)
 
     # Datenbank liegt im Datenordner, relative Dateien landen ebenfalls dort
@@ -282,7 +300,7 @@ def main():
             on_started,
             private_mode=False,  # Einstellungen der Oberflaeche (localStorage) behalten
             storage_path=os.path.join(ddir, "webview"),
-            debug=bool(os.environ.get("BINDERDEX_DEBUG")),
+            debug=bool(env("DEBUG")),
         )
     finally:
         log.info("Fenster geschlossen, beende Backend")

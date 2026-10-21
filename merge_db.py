@@ -1,4 +1,4 @@
-"""Merge two Binderdex databases (e.g. a copy from your PC and the one on your server).
+"""Merge two Ninedex databases (e.g. a copy from your PC and the one on your server).
 
 Usage:
   python merge_db.py SOURCE.db TARGET.db            preview only, nothing is written

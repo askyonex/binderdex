@@ -1,7 +1,9 @@
-# Binderdex
+# Ninedex
 
 **Self-hosted web app to digitize, price and manage your Pokémon card collection.**
 Built around one idea: **one card per Pokémon in your binder** (a Pokédex of cards), everything else goes to a side pile you can sell or trade.
+
+> **Formerly called Binderdex.** Existing desktop installs update normally, your collection is moved over automatically on the first start.
 
 > **Unofficial fan project.** Not affiliated with, endorsed or sponsored by The Pokémon Company, Nintendo, Creatures or Game Freak. See the [legal notice](#legal-notice).
 >
@@ -9,7 +11,7 @@ Built around one idea: **one card per Pokémon in your binder** (a Pokédex of c
 
 No account, no cloud, no API key. It runs as a desktop app on Windows and macOS, or as a web app on your PC, a Raspberry Pi or a small server, and your data stays in a single SQLite file.
 
-![Binderdex: Pokédex with one card per Pokémon](docs/screenshots/pokedex-en.png)
+![Ninedex: Pokédex with one card per Pokémon](docs/screenshots/pokedex-en.png)
 
 ## Screenshots
 
@@ -62,26 +64,26 @@ No account, no cloud, no API key. It runs as a desktop app on Windows and macOS,
 
 ## Download: desktop app (Windows / macOS)
 
-The easiest way: no Python, no terminal. Download the file for your system from the [latest release](https://github.com/askyonex/binderdex/releases/latest):
+The easiest way: no Python, no terminal. Download the file for your system from the [latest release](https://github.com/askyonex/ninedex/releases/latest):
 
 | System | File |
 | ------ | ---- |
-| Windows 10 / 11 (64-bit) | `BinderDex-Setup-x.y.z.exe` |
-| Mac with Apple Silicon (M1 or newer) | `BinderDex-x.y.z-macOS-arm64.dmg` |
-| Mac with Intel processor | `BinderDex-x.y.z-macOS-x86_64.dmg` |
+| Windows 10 / 11 (64-bit) | `Ninedex-Setup-x.y.z.exe` |
+| Mac with Apple Silicon (M1 or newer) | `Ninedex-x.y.z-macOS-arm64.dmg` |
+| Mac with Intel processor | `Ninedex-x.y.z-macOS-x86_64.dmg` |
 
 **Windows:** run the installer (no admin rights needed). Because the app is not code-signed, Windows may show *"Windows protected your PC"*: click **More info → Run anyway**.
-**macOS:** open the DMG and drag BinderDex onto *Applications*. On the first start macOS blocks the app because it is not notarized by Apple: open **System Settings → Privacy & Security**, scroll down and click **Open Anyway** (only needed once).
+**macOS:** open the DMG and drag Ninedex onto *Applications*. On the first start macOS blocks the app because it is not notarized by Apple: open **System Settings → Privacy & Security**, scroll down and click **Open Anyway** (only needed once).
 
-The installer asks which app languages you want (English, German, Spanish). The desktop app runs the same app in its own window, the camera scan works with your webcam. Your collection is stored per user (Windows: `%APPDATA%\BinderDex`, macOS: `~/Library/Application Support/BinderDex`) and stays there on updates and (if you choose so) uninstalls. The app tells you when a new version is available. Details: [docs/desktop-app.md](docs/desktop-app.md)
+The installer asks which app languages you want (English, German, Spanish). The desktop app runs the same app in its own window, the camera scan works with your webcam. Your collection is stored per user (Windows: `%APPDATA%\Ninedex`, macOS: `~/Library/Application Support/Ninedex`) and stays there on updates and (if you choose so) uninstalls. The app tells you when a new version is available. Details: [docs/desktop-app.md](docs/desktop-app.md)
 
 ## Quick start
 
 Requirements: Python 3.10+ and a modern browser. Internet access is needed (card data, images, prices).
 
 ```bash
-git clone https://github.com/askyonex/binderdex.git
-cd binderdex
+git clone https://github.com/askyonex/ninedex.git
+cd ninedex
 python -m venv venv
 source venv/bin/activate          # Windows: venv\Scripts\activate
 pip install -r requirements.txt

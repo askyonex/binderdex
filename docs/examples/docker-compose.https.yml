@@ -1,10 +1,10 @@
-# Binderdex behind Caddy (HTTPS with an internal certificate).
+# Ninedex behind Caddy (HTTPS with an internal certificate).
 # Start with:  docker compose -f docker-compose.https.yml up -d --build
 # (copy this file and Caddyfile.example -> Caddyfile next to the Dockerfile first)
 services:
-  binderdex:
+  ninedex:
     build: .
-    container_name: binderdex
+    container_name: ninedex
     restart: unless-stopped
     environment:
       TZ: "Europe/Berlin"

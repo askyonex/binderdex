@@ -1,16 +1,16 @@
-﻿; Inno-Setup-Skript fuer den Windows-Installer von BinderDex.
-; Voraussetzung: PyInstaller-Ergebnis in dist\BinderDex\ und Symbol in desktop\build\icon.ico
+﻿; Inno-Setup-Skript fuer den Windows-Installer von Ninedex.
+; Voraussetzung: PyInstaller-Ergebnis in dist\Ninedex\ und Symbol in desktop\build\icon.ico
 ; Aufruf aus dem Repo-Ordner:
-;   iscc /DMyAppVersion=1.0.0 desktop\installer\binderdex.iss
-; Ergebnis: dist\installer\BinderDex-Setup-1.0.0.exe
+;   iscc /DMyAppVersion=1.0.0 desktop\installer\ninedex.iss
+; Ergebnis: dist\installer\Ninedex-Setup-1.0.0.exe
 
 #ifndef MyAppVersion
   #define MyAppVersion "0.0.0"
 #endif
-#define MyAppName "BinderDex"
-#define MyAppExe "BinderDex.exe"
+#define MyAppName "Ninedex"
+#define MyAppExe "Ninedex.exe"
 #define MyAppPublisher "askyonex"
-#define MyAppURL "https://github.com/askyonex/binderdex"
+#define MyAppURL "https://github.com/askyonex/ninedex"
 #define Root "..\.."
 
 [Setup]
@@ -34,7 +34,7 @@ ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 MinVersion=10.0
 OutputDir={#Root}\dist\installer
-OutputBaseFilename=BinderDex-Setup-{#MyAppVersion}
+OutputBaseFilename=Ninedex-Setup-{#MyAppVersion}
 SetupIconFile={#Root}\desktop\build\icon.ico
 UninstallDisplayIcon={app}\{#MyAppExe}
 UninstallDisplayName={#MyAppName}
@@ -51,18 +51,18 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "spanish"; MessagesFile: "compiler:Languages\Spanish.isl"
 
 [CustomMessages]
-german.NoWebView2=BinderDex braucht die Microsoft Edge WebView2 Runtime. Sie ist unter Windows 11 und aktuellem Windows 10 normalerweise schon vorhanden, hier aber nicht gefunden worden.%n%nSoll die Download-Seite von Microsoft geöffnet werden? Installiere dort die "Evergreen Bootstrapper"-Version und starte BinderDex danach.
-english.NoWebView2=BinderDex needs the Microsoft Edge WebView2 Runtime. It usually ships with Windows 11 and current Windows 10, but it was not found here.%n%nOpen Microsoft's download page now? Install the "Evergreen Bootstrapper" there, then start BinderDex.
-spanish.NoWebView2=BinderDex necesita Microsoft Edge WebView2 Runtime. Normalmente ya viene con Windows 11 y con Windows 10 actualizado, pero aquí no se ha encontrado.%n%n¿Abrir ahora la página de descarga de Microsoft? Instala allí el "Evergreen Bootstrapper" y después inicia BinderDex.
+german.NoWebView2=Ninedex braucht die Microsoft Edge WebView2 Runtime. Sie ist unter Windows 11 und aktuellem Windows 10 normalerweise schon vorhanden, hier aber nicht gefunden worden.%n%nSoll die Download-Seite von Microsoft geöffnet werden? Installiere dort die "Evergreen Bootstrapper"-Version und starte Ninedex danach.
+english.NoWebView2=Ninedex needs the Microsoft Edge WebView2 Runtime. It usually ships with Windows 11 and current Windows 10, but it was not found here.%n%nOpen Microsoft's download page now? Install the "Evergreen Bootstrapper" there, then start Ninedex.
+spanish.NoWebView2=Ninedex necesita Microsoft Edge WebView2 Runtime. Normalmente ya viene con Windows 11 y con Windows 10 actualizado, pero aquí no se ha encontrado.%n%n¿Abrir ahora la página de descarga de Microsoft? Instala allí el "Evergreen Bootstrapper" y después inicia Ninedex.
 german.KeepData=Deine Sammlung (Datenbank und Einstellungen) liegt noch in:%n%1%n%nSoll sie BEHALTEN werden? (Empfohlen, z. B. für eine Neuinstallation.)%n%nJa = behalten, Nein = endgültig löschen
 english.KeepData=Your collection (database and settings) is still stored in:%n%1%n%nKeep it? (Recommended, e.g. for a reinstall.)%n%nYes = keep, No = delete permanently
 spanish.KeepData=Tu colección (base de datos y ajustes) sigue guardada en:%n%1%n%n¿CONSERVARLA? (Recomendado, p. ej. para reinstalar.)%n%nSí = conservar, No = borrar definitivamente
 german.LangTitle=Sprachen
 english.LangTitle=Languages
 spanish.LangTitle=Idiomas
-german.LangDesc=In welchen Sprachen soll BinderDex verfügbar sein?
-english.LangDesc=Which languages should BinderDex be available in?
-spanish.LangDesc=¿En qué idiomas debe estar disponible BinderDex?
+german.LangDesc=In welchen Sprachen soll Ninedex verfügbar sein?
+english.LangDesc=Which languages should Ninedex be available in?
+spanish.LangDesc=¿En qué idiomas debe estar disponible Ninedex?
 german.LangSub=Oberfläche und Pokédex (Pokémon-Namen und Einträge) erscheinen in der gewählten Sprache. Du kannst mehrere auswählen und in der App jederzeit zwischen ihnen wechseln (Einstellungen > Sprache).
 english.LangSub=The interface and the Pokédex (Pokémon names and entries) appear in the selected language. You can select several and switch between them in the app at any time (Settings > Language).
 spanish.LangSub=La interfaz y la Pokédex (nombres y entradas de los Pokémon) aparecen en el idioma elegido. Puedes elegir varios y cambiar entre ellos en la app cuando quieras (Ajustes > Idioma).
@@ -72,9 +72,9 @@ spanish.LangNone=Elige al menos un idioma.
 german.DefTitle=Startsprache
 english.DefTitle=Start language
 spanish.DefTitle=Idioma de inicio
-german.DefDesc=In welcher Sprache soll BinderDex starten?
-english.DefDesc=Which language should BinderDex start in?
-spanish.DefDesc=¿En qué idioma debe iniciarse BinderDex?
+german.DefDesc=In welcher Sprache soll Ninedex starten?
+english.DefDesc=Which language should Ninedex start in?
+spanish.DefDesc=¿En qué idioma debe iniciarse Ninedex?
 german.DefSub=Die anderen gewählten Sprachen stehen in der App unter Einstellungen > Sprache zur Auswahl.
 english.DefSub=The other selected languages are available in the app under Settings > Language.
 spanish.DefSub=Los demás idiomas elegidos están disponibles en la app en Ajustes > Idioma.
@@ -83,18 +83,23 @@ spanish.DefSub=Los demás idiomas elegidos están disponibles en la app en Ajust
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 
 [Files]
-Source: "{#Root}\dist\BinderDex\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "{#Root}\dist\Ninedex\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 [InstallDelete]
 ; Alte Programmdateien bei Updates entfernen (die Sammlung liegt woanders und bleibt)
 Type: filesandordirs; Name: "{app}\_internal"
+; Reste vom frueheren Namen BinderDex (gleiche AppId, Update laeuft im alten Programmordner)
+Type: files; Name: "{app}\BinderDex.exe"
+Type: files; Name: "{app}\binderdex.ini"
+Type: files; Name: "{autoprograms}\BinderDex.lnk"
+Type: files; Name: "{autodesktop}\BinderDex.lnk"
 
 [Icons]
 Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\{#MyAppExe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExe}"; Tasks: desktopicon
 
 [UninstallDelete]
-Type: files; Name: "{app}\binderdex.ini"
+Type: files; Name: "{app}\ninedex.ini"
 
 [Run]
 Filename: "{app}\{#MyAppExe}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent
@@ -155,6 +160,8 @@ begin
     LangPage.Add(LangName(i));
   prev := '';
   if WizardForm.PrevAppDir <> '' then
+    prev := GetIniString('ui', 'languages', '', AddBackslash(WizardForm.PrevAppDir) + 'ninedex.ini');
+  if (prev = '') and (WizardForm.PrevAppDir <> '') then
     prev := GetIniString('ui', 'languages', '', AddBackslash(WizardForm.PrevAppDir) + 'binderdex.ini');
   for i := 0 to NLANG - 1 do
     if prev <> '' then
@@ -244,8 +251,8 @@ var
 begin
   if CurStep = ssPostInstall then
   begin
-    { Sprachauswahl fuer den Starter (desktop/binderdex_desktop.py liest sie bei jedem Start) }
-    SaveStringToFile(ExpandConstant('{app}\binderdex.ini'), '[ui]' + #13#10 + 'languages=' + LangList() + #13#10, False);
+    { Sprachauswahl fuer den Starter (desktop/ninedex_desktop.py liest sie bei jedem Start) }
+    SaveStringToFile(ExpandConstant('{app}\ninedex.ini'), '[ui]' + #13#10 + 'languages=' + LangList() + #13#10, False);
     if (not WebView2Present()) and (not WizardSilent()) then
       if MsgBox(CustomMessage('NoWebView2'), mbConfirmation, MB_YESNO) = IDYES then
         ShellExec('open', 'https://developer.microsoft.com/microsoft-edge/webview2/', '', '', SW_SHOWNORMAL, ewNoWait, ErrorCode);
@@ -258,7 +265,7 @@ var
 begin
   if CurUninstallStep = usPostUninstall then
   begin
-    DataDir := ExpandConstant('{userappdata}\BinderDex');
+    DataDir := ExpandConstant('{userappdata}\Ninedex');
     if DirExists(DataDir) and (not UninstallSilent()) then
       if MsgBox(FmtMessage(CustomMessage('KeepData'), [DataDir]), mbConfirmation, MB_YESNO or MB_DEFBUTTON1) = IDNO then
         DelTree(DataDir, True, True, True);

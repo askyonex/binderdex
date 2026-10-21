@@ -2113,7 +2113,7 @@ function langUI() {
 }
 function openLangs(first) {
   const L = window.I18N, on = new Set(first ? [L.lang] : L.langs);
-  $("#lgtitle").textContent = first ? "Willkommen bei Binderdex" : "Sprachen";
+  $("#lgtitle").textContent = first ? "Willkommen bei Ninedex" : "Sprachen";
   $("#lgclose").style.display = first ? "none" : "";
   $("#lglist").innerHTML = L.all.map(l => `<label><input type="checkbox" value="${l}"${on.has(l) ? " checked" : ""}> ${L.names[l]}</label>`).join("");
   const defs = () => {

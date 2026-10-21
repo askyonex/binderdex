@@ -1,4 +1,4 @@
-/* Binderdex: Mehrsprachigkeit im Browser.
+/* Ninedex: Mehrsprachigkeit im Browser.
  *
  * Die Oberflaeche ist auf Deutsch geschrieben. Dieses Skript laedt das Woerterbuch der gewaehlten Sprache
  * (static/i18n/<lang>.json, ausgeliefert als /i18n/<lang>.js) und uebersetzt alle Texte, die auf der Seite

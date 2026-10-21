@@ -1,6 +1,6 @@
 # Languages and translations
 
-Binderdex is available in **German, English and Spanish**: the interface, the Pokémon names and the Pokédex entries (category and text from the games) follow the selected language. Exports (CSV, Excel, sales page) and the AI's free-text answers in the grading check do too.
+Ninedex is available in **German, English and Spanish**: the interface, the Pokémon names and the Pokédex entries (category and text from the games) follow the selected language. Exports (CSV, Excel, sales page) and the AI's free-text answers in the grading check do too.
 
 ## For users
 
@@ -8,7 +8,7 @@ Binderdex is available in **German, English and Spanish**: the interface, the Po
 - **macOS app, Raspberry Pi, Docker, `python app.py`:** on the first start the app shows a short dialog with the same choice.
 - **Switching:** *Settings → Language* (yellow lamp on the PC, menu on the phone). The choice is saved **per device**, so you can use English on your phone and German on the PC with the same collection.
 - **Adding or removing languages later:** the **…** button next to the language selection. The first language in that list is the default for new devices.
-- **Docker / server:** `BINDERDEX_LANGS: "de,en,es"` in `docker-compose.yml` sets the languages from outside (first = default). The app takes it over whenever the value changes.
+- **Docker / server:** `NINEDEX_LANGS: "de,en,es"` in `docker-compose.yml` sets the languages from outside (first = default). The app takes it over whenever the value changes.
 
 Pokémon names and Pokédex entries come from PokeAPI. After the update the app downloads them once for all three languages (a few minutes, shown in the header). If a Pokédex entry is missing in a language, the English one is shown, then the German one.
 
@@ -44,4 +44,4 @@ Texts that should never be translated (CSS selectors, addresses, proper names) g
 1. Copy `static/i18n/en.json` to `static/i18n/<code>.json` (for example `fr.json`) and translate the values.
 2. Add the code to `DEX_LANGS` in `app.py`, plus game names in a `GAMES_<CODE>` table (the Pokédex texts come from PokeAPI, which has French, Italian, Korean and more).
 3. Add it to `NAMES` and `LOCALES` in `static/i18n.js`.
-4. For the Windows installer: one more line in `LangCode`/`LangName` in `desktop/installer/binderdex.iss` (and `NLANG`), plus the language in `installer_langs()` in `desktop/binderdex_desktop.py`.
+4. For the Windows installer: one more line in `LangCode`/`LangName` in `desktop/installer/ninedex.iss` (and `NLANG`), plus the language in `installer_langs()` in `desktop/ninedex_desktop.py`.

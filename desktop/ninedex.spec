@@ -1,6 +1,6 @@
-# PyInstaller-Bauplan fuer die BinderDex-Desktop-App (Windows und macOS).
-# Aufruf aus dem Repo-Ordner:  pyinstaller desktop/binderdex.spec --noconfirm
-# Ergebnis:  dist/BinderDex/ (Windows-Programmordner)  bzw.  dist/BinderDex.app (macOS)
+# PyInstaller-Bauplan fuer die Ninedex-Desktop-App (Windows und macOS).
+# Aufruf aus dem Repo-Ordner:  pyinstaller desktop/ninedex.spec --noconfirm
+# Ergebnis:  dist/Ninedex/ (Windows-Programmordner)  bzw.  dist/Ninedex.app (macOS)
 import os
 import sys
 
@@ -10,7 +10,7 @@ with open(os.path.join(ROOT, "VERSION"), encoding="utf-8") as f:
     VERSION = f.read().strip()
 
 a = Analysis(
-    [os.path.join(ROOT, "desktop", "binderdex_desktop.py")],
+    [os.path.join(ROOT, "desktop", "ninedex_desktop.py")],
     pathex=[ROOT],  # damit "import app" das Backend findet
     datas=[
         (os.path.join(ROOT, "static"), "static"),
@@ -27,30 +27,30 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name="BinderDex",
+    name="Ninedex",
     console=False,  # kein schwarzes Konsolenfenster
     icon=os.path.join(BUILD, "icon.ico" if sys.platform == "win32" else "icon.icns"),
     upx=False,
 )
 
-coll = COLLECT(exe, a.binaries, a.datas, name="BinderDex", upx=False)
+coll = COLLECT(exe, a.binaries, a.datas, name="Ninedex", upx=False)
 
 if sys.platform == "darwin":
     app = BUNDLE(
         coll,
-        name="BinderDex.app",
+        name="Ninedex.app",
         icon=os.path.join(BUILD, "icon.icns"),
-        bundle_identifier="io.github.askyonex.binderdex",
+        bundle_identifier="io.github.askyonex.ninedex",
         version=VERSION,
         info_plist={
-            "CFBundleDisplayName": "BinderDex",
+            "CFBundleDisplayName": "Ninedex",
             "CFBundleShortVersionString": VERSION,
             "CFBundleVersion": VERSION,
             "NSHighResolutionCapable": True,
             "LSMinimumSystemVersion": "11.0",
             "LSApplicationCategoryType": "public.app-category.utilities",
             # Ohne diese Texte darf macOS der App keinen Kamerazugriff geben (Karten-Scan)
-            "NSCameraUsageDescription": "BinderDex nutzt die Kamera, um Kartennummern zu scannen.",
-            "NSMicrophoneUsageDescription": "BinderDex nimmt keinen Ton auf. Die Kamera-Abfrage des Systems kann trotzdem nach dem Mikrofon fragen.",
+            "NSCameraUsageDescription": "Ninedex nutzt die Kamera, um Kartennummern zu scannen.",
+            "NSMicrophoneUsageDescription": "Ninedex nimmt keinen Ton auf. Die Kamera-Abfrage des Systems kann trotzdem nach dem Mikrofon fragen.",
         },
     )

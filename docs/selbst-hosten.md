@@ -1,6 +1,6 @@
 # Selbst hosten
 
-Binderdex braucht sehr wenig: einen Raspberry Pi 4 (2 GB reichen), einen Mini-PC, ein NAS mit Docker oder irgendeinen Rechner, der dauerhaft läuft. Die Texterkennung läuft im Browser, der Server hat nur wenig zu tun.
+Ninedex braucht sehr wenig: einen Raspberry Pi 4 (2 GB reichen), einen Mini-PC, ein NAS mit Docker oder irgendeinen Rechner, der dauerhaft läuft. Die Texterkennung läuft im Browser, der Server hat nur wenig zu tun.
 
 ## 1. Lokal starten (ohne Docker)
 
@@ -22,7 +22,7 @@ Die Compose-Datei veröffentlicht den Port nur auf `127.0.0.1`. Für den Zugriff
 ## 3. Raspberry Pi
 
 1. Ein 64-Bit-Raspberry-Pi-OS installieren, danach Docker: `curl -fsSL https://get.docker.com | sh` und `sudo usermod -aG docker $USER` (neu anmelden).
-2. `git clone https://github.com/askyonex/binderdex.git && cd binderdex`
+2. `git clone https://github.com/askyonex/ninedex.git && cd ninedex`
 3. `docker compose up -d --build`
 
 Der Container startet nach einem Neustart von selbst (`restart: unless-stopped`).
@@ -33,7 +33,7 @@ Hinweis: Das Docker-Image installiert `openpyxl` und `pillow` (aus `requirements
 
 Browser erlauben den Kamerazugriff nur auf `https://`-Seiten oder auf `localhost`. Zu Hause geht das einfach mit Caddy und einer eigenen kleinen Zertifizierungsstelle.
 
-1. **DNS-Name:** lege einen lokalen DNS-Eintrag an, der einen Namen wie `binderdex.home.arpa` auf die IP deines Servers zeigen lässt (Router, Pi-hole, AdGuard Home ...). Nutze nicht `.local`.
+1. **DNS-Name:** lege einen lokalen DNS-Eintrag an, der einen Namen wie `ninedex.home.arpa` auf die IP deines Servers zeigen lässt (Router, Pi-hole, AdGuard Home ...). Nutze nicht `.local`.
 2. **Caddy:** kopiere `docs/examples/docker-compose.https.yml` und `docs/examples/Caddyfile.example` neben die Dockerfile (die zweite Datei in `Caddyfile` umbenennen, Namen anpassen) und starte `docker compose -f docker-compose.https.yml up -d --build`.
 3. **Zertifikat auf jedem Gerät vertrauen.** Root-Zertifikat exportieren:
    ```bash
@@ -44,7 +44,7 @@ Browser erlauben den Kamerazugriff nur auf `https://`-Seiten oder auf `localhost
    - **Android:** *Einstellungen > Sicherheit > Verschlüsselung & Anmeldedaten > Zertifikat installieren > CA-Zertifikat*.
    - **macOS:** Doppelklick, zum Schlüsselbund hinzufügen, auf *Immer vertrauen* stellen.
    - **Windows:** Doppelklick, *Zertifikat installieren*, in *Vertrauenswürdige Stammzertifizierungsstellen* (lokaler Computer) speichern, Browser neu starten.
-4. `https://binderdex.home.arpa` öffnen. Es darf keine Warnung erscheinen.
+4. `https://ninedex.home.arpa` öffnen. Es darf keine Warnung erscheinen.
 
 Nimm das Volume `caddy_data` in deine Backups auf. Geht es verloren, erzeugt Caddy eine neue Zertifizierungsstelle und das Zertifikat muss auf allen Geräten neu installiert werden.
 
@@ -61,7 +61,7 @@ Deine ganze Sammlung ist eine SQLite-Datei (`data/pokedex.db`). Drei Wege zur Si
 - **In der App:** *Statistik > Datenbank sichern* lädt eine konsistente Kopie herunter.
 - **Skript:** `scripts/backup.sh` erstellt täglich eine Sicherung (auch bei laufender App) und kopiert sie optional auf eine eingebundene Netzwerkfreigabe. Beispiel für einen Cronjob (täglich 3:15 Uhr):
   ```
-  15 3 * * * DB_FILE=/home/pi/binderdex/data/pokedex.db BACKUP_DIR=/home/pi/binderdex/backups /home/pi/binderdex/scripts/backup.sh
+  15 3 * * * DB_FILE=/home/pi/ninedex/data/pokedex.db BACKUP_DIR=/home/pi/ninedex/backups /home/pi/ninedex/scripts/backup.sh
   ```
   Für eine NAS-Freigabe ergänzt du `NAS_MOUNT=/mnt/nas` (und bindest sie ein, z. B. mit einem `/etc/fstab`-Eintrag mit `cifs` und `credentials=`). Ist die Freigabe von root eingebunden, lass den Cronjob als root laufen.
 - **Wiederherstellen:** App beenden, ein Backup über `data/pokedex.db` kopieren, App starten.

@@ -214,7 +214,7 @@ EXTRA = [
     "hoch", "mittel", "niedrig", "Zentrierung vorne", "Zentrierung hinten", "Ecken", "Kanten", "Oberfläche",
     # Verkaufsseite (/verkauf)
     "Verkaufsliste", "Stand {0} · {1} Karten · Wert ca.", "Drucken / Als PDF speichern", "Einzelpreis",
-    "Der Nebenstapel ist leer.", "Preise: Cardmarket-Trend (Richtwerte). Erstellt mit Binderdex.", "{0}×",
+    "Der Nebenstapel ist leer.", "Preise: Cardmarket-Trend (Richtwerte). Erstellt mit Ninedex.", "{0}×",
     # Exporte
     "ja", "nein", "Pokédex-Nr.", "Im Binder", "Cardmarket-Link",
     # zusammengesetzte Meldungen (app.py)

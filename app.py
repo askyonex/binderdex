@@ -59,7 +59,7 @@ _ja = {"names": {}, "t": 0.0}  # englische Namen japanischer Sets (Cache)
 
 
 def fetch(url):
-    req = urllib.request.Request(url, headers={"User-Agent": "binderdex (self-hosted Pokemon card collection app)"})
+    req = urllib.request.Request(url, headers={"User-Agent": "ninedex (self-hosted Pokemon card collection app)"})
     with urllib.request.urlopen(req, timeout=20) as r:
         return json.load(r)
 
@@ -797,14 +797,14 @@ def get_series(lang):
 
 # ================= Sprachen der Oberflaeche (de, en, es)
 # Die Oberflaeche ist auf Deutsch geschrieben, static/i18n.js uebersetzt sie im Browser mit static/i18n/<lang>.json.
-# Welche Sprachen zur Auswahl stehen, steht in meta (ui_langs, ui_default). BINDERDEX_LANGS (z. B. "de,en",
+# Welche Sprachen zur Auswahl stehen, steht in meta (ui_langs, ui_default). NINEDEX_LANGS (z. B. "de,en",
 # die erste ist die Standardsprache) setzt sie von aussen, etwa der Windows-Installer oder docker-compose.
 UI_LANGS = DEX_LANGS
 _dicts = {}
 
 
 def ui_config():
-    env = ",".join(l for l in (x.strip().lower() for x in os.environ.get("BINDERDEX_LANGS", "").split(",")) if l in UI_LANGS)
+    env = ",".join(l for l in (x.strip().lower() for x in (os.environ.get("NINEDEX_LANGS") or os.environ.get("BINDERDEX_LANGS") or "").split(",")) if l in UI_LANGS)
     if env and env != meta_get("ui_env", ""):  # neue Auswahl von aussen (Installer, Umgebungsvariable) uebernehmen
         meta_set("ui_langs", env)
         meta_set("ui_default", env.split(",")[0])
@@ -1281,7 +1281,7 @@ _imgcache = {}
 
 
 def fetch_bytes(url):
-    req = urllib.request.Request(url, headers={"User-Agent": "binderdex (self-hosted Pokemon card collection app)"})
+    req = urllib.request.Request(url, headers={"User-Agent": "ninedex (self-hosted Pokemon card collection app)"})
     with urllib.request.urlopen(req, timeout=20) as r:
         return r.read()
 
@@ -1385,7 +1385,7 @@ small{{color:#5b6477}}tfoot td{{font-weight:700;border-top:2px solid #1f2433}}bu
 <table><thead><tr><th></th><th>Karte</th><th>Zustand</th><th>Anzahl</th><th>Einzelpreis</th><th>Summe</th><th class="no"></th></tr></thead>
 <tbody>{body or '<tr><td colspan=7>Der Nebenstapel ist leer.</td></tr>'}</tbody>
 <tfoot><tr><td></td><td>Summe</td><td></td><td class="n">{sum(r['spare'] for r in rows)}×</td><td></td><td class="n">{fmt(total)}</td><td class="no"></td></tr></tfoot></table>
-<p><small>Preise: Cardmarket-Trend (Richtwerte). Erstellt mit Binderdex.</small></p></body></html>"""
+<p><small>Preise: Cardmarket-Trend (Richtwerte). Erstellt mit Ninedex.</small></p></body></html>"""
     return Response(page, mimetype="text/html")
 
 
@@ -1593,7 +1593,7 @@ def ai_request(url, payload=None, headers=None, timeout=60, provider=""):
     """HTTP-Aufruf an den KI-Dienst; Fehler werden in verstaendliche Meldungen uebersetzt."""
     data = json.dumps(payload).encode("utf-8") if payload is not None else None
     req = urllib.request.Request(url, data=data, method="POST" if data is not None else "GET",
-                                 headers={"Content-Type": "application/json", "User-Agent": "binderdex", **(headers or {})})
+                                 headers={"Content-Type": "application/json", "User-Agent": "ninedex", **(headers or {})})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return json.loads(r.read().decode("utf-8"))
@@ -2185,7 +2185,7 @@ def prices_refresh():
 
 def startup():
     """Datenbank anlegen/migrieren und Hintergrundaufgaben starten.
-    Wird von app.py selbst und vom Desktop-Starter (desktop/binderdex_desktop.py) aufgerufen."""
+    Wird von app.py selbst und vom Desktop-Starter (desktop/ninedex_desktop.py) aufgerufen."""
     init()
     n_names = q("SELECT COUNT(*) AS n FROM pokemon")[0]["n"]
     if (n_names < 1000 or q("SELECT COUNT(*) AS n FROM dex_info")[0]["n"] < n_names or q("SELECT COUNT(*) AS n FROM pokemon WHERE name_en IS NULL OR name_es IS NULL")[0]["n"]
