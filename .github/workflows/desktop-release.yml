@@ -4,12 +4,23 @@
 #   -> Windows-Installer (.exe) + macOS-DMGs (Apple Silicon und Intel) im Release "v1.0.0"
 # Probelauf ohne Release: Reiter "Actions" > "Desktop release" > "Run workflow"
 #   -> die Dateien liegen dann nur als Download unter "Artifacts" des Laufs
+# Bestehendes Release neu bauen (z. B. wenn ein Mac-Build bei GitHub keinen Rechner bekommen hat):
+#   "Run workflow" mit Release-Tag, z. B. v1.2.0 -> baut den Stand dieses Tags und haengt die Dateien an
 name: Desktop release
 
 on:
   push:
     tags: ["v*"]
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: "Bestehendes Release neu bauen (z. B. v1.2.0). Leer = nur Probelauf"
+        required: false
+        default: ""
+
+env:
+  # Tag, an dessen Release die Dateien gehaengt werden (leer = Probelauf ohne Release)
+  REL_TAG: ${{ github.ref_type == 'tag' && github.ref_name || inputs.release_tag }}
 
 permissions:
   contents: write
@@ -19,11 +30,13 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.REL_TAG }}
 
       - name: Version bestimmen
         shell: bash
         run: |
-          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then V="${GITHUB_REF_NAME#v}"; else V="$(cat VERSION)"; fi
+          if [[ -n "$REL_TAG" ]]; then V="${REL_TAG#v}"; else V="$(cat VERSION)"; fi
           echo "$V" > VERSION
           echo "VERSION=$V" >> "$GITHUB_ENV"
 
@@ -104,17 +117,19 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - runner: macos-15        # Apple Silicon (M1 und neuer)
+          - runner: macos-14        # Apple Silicon (M1 und neuer); macos-15 bekam oft keinen Rechner
             arch: arm64
           - runner: macos-15-intel  # aeltere Macs mit Intel-Prozessor
             arch: x86_64
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.REL_TAG }}
 
       - name: Version bestimmen
         run: |
-          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then V="${GITHUB_REF_NAME#v}"; else V="$(cat VERSION)"; fi
+          if [[ -n "$REL_TAG" ]]; then V="${REL_TAG#v}"; else V="$(cat VERSION)"; fi
           echo "$V" > VERSION
           echo "VERSION=$V" >> "$GITHUB_ENV"
 
@@ -143,11 +158,13 @@ jobs:
 
   release:
     # Laeuft auch, wenn ein Mac-Build scheitert (z. B. Intel), solange Windows geklappt hat
-    if: always() && github.ref_type == 'tag' && needs.windows.result == 'success'
+    if: always() && (github.ref_type == 'tag' || inputs.release_tag != '') && needs.windows.result == 'success'
     needs: [windows, macos]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.REL_TAG }}
 
       - uses: actions/download-artifact@v4
         with:
@@ -158,7 +175,7 @@ jobs:
         run: |
           python3 - <<'PY'
           import json, os
-          ver = os.environ["GITHUB_REF_NAME"].lstrip("vV")
+          ver = os.environ["REL_TAG"].lstrip("vV")
           vs = json.load(open("static/changelog.json", encoding="utf-8"))["versions"]
           v = next((x for x in vs if x["version"] == ver), None)
           if v is None:  # kein Eintrag: Release trotzdem bauen, mit allgemeinem Text
@@ -177,5 +194,6 @@ jobs:
 
       - uses: softprops/action-gh-release@v2
         with:
+          tag_name: ${{ env.REL_TAG }}
           files: out/*
           body_path: release-notes.md
