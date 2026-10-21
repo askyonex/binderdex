@@ -9,6 +9,21 @@ Die Grundidee: **eine Karte pro Pokémon im Binder** (ein Pokédex aus Karten), 
 
 Kein Konto, keine Cloud, kein API-Schlüssel. Die App läuft als Desktop-App unter Windows und macOS oder als Web-App auf deinem PC, einem Raspberry Pi oder einem kleinen Server, deine Daten liegen in einer einzigen SQLite-Datei.
 
+![Binderdex: Pokédex mit einer Karte pro Pokémon](docs/screenshots/pokedex-de.png)
+
+## Screenshots
+
+| | |
+| --- | --- |
+| ![Pokémon-Fenster mit allen Karten eines Pokémon, Pokédex-Eintrag und Preisen](docs/screenshots/pokemon-en.png) | ![Statistik: Fortschritt pro Generation, Sprachen, Seltenheiten, wertvollste Sets](docs/screenshots/statistics-en.png) |
+| **Pokémon-Fenster:** alle deine Karten eines Pokémon, Pokédex-Eintrag, Preise und Preisbewegung | **Statistik:** Fortschritt pro Generation, Fullart-Anteil, Sprachen, Seltenheiten, wertvollste Sets, Wertverlauf |
+| ![Binder-Ansicht, Seite für Seite](docs/screenshots/binder-en.png) | ![Verkaufen auf Cardmarket: Karten, Zustand und Preis wählen](docs/screenshots/sell-en.png) |
+| **Binder-Ansicht:** Seite für Seite wie ein echter Binder | **Auf Cardmarket verkaufen:** Karten, Zustand und Preis wählen, dann führt der Listing-Assistent durch |
+| ![Spracheinstellungen auf Spanisch](docs/screenshots/languages-es.png) | <img src="docs/screenshots/mobile-de.png" alt="Ansicht am Handy" width="300"> |
+| **Sprachen:** Deutsch, Englisch und Spanisch, pro Gerät umschaltbar | **Handy:** dieselbe App im Browser deines Handys |
+
+<sub>Screenshots mit einer Demo-Sammlung, teils auf Englisch und Spanisch. Die Kartenbilder sind für die Screenshots gezeichnete Platzhalter, die App zeigt die echten Kartenbilder von TCGdex.</sub>
+
 ## Funktionen
 
 **Pokédex und Binder**

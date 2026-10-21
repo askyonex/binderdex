@@ -9,6 +9,21 @@ Built around one idea: **one card per Pokémon in your binder** (a Pokédex of c
 
 No account, no cloud, no API key. It runs as a desktop app on Windows and macOS, or as a web app on your PC, a Raspberry Pi or a small server, and your data stays in a single SQLite file.
 
+![Binderdex: Pokédex with one card per Pokémon](docs/screenshots/pokedex-en.png)
+
+## Screenshots
+
+| | |
+| --- | --- |
+| ![Pokémon window with all cards of a Pokémon, Pokédex entry and prices](docs/screenshots/pokemon-en.png) | ![Statistics: progress per generation, languages, rarities, most valuable sets](docs/screenshots/statistics-en.png) |
+| **Pokémon window:** all your cards of a Pokémon, the Pokédex entry, prices and price movement | **Statistics:** progress per generation, fullart share, languages, rarities, most valuable sets, value history |
+| ![Binder view, page by page](docs/screenshots/binder-en.png) | ![Selling on Cardmarket: choose cards, condition and price](docs/screenshots/sell-en.png) |
+| **Binder view:** page by page like a real binder | **Sell on Cardmarket:** choose cards, condition and price, then the listing assistant guides you |
+| ![Language settings in Spanish](docs/screenshots/languages-es.png) | <img src="docs/screenshots/mobile-de.png" alt="Phone view in German" width="300"> |
+| **Languages:** English, German and Spanish, switchable per device | **Phone:** the same app in the browser of your phone (here in German) |
+
+<sub>Screenshots with a demo collection. The card images are placeholders drawn for these screenshots; the app shows the real card images from TCGdex.</sub>
+
 ## Features
 
 **Pokédex and binder**
