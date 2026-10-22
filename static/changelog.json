@@ -2,6 +2,22 @@
  "_info": "Aenderungen je Version, neueste zuerst. Wird nach einem Update in der App angezeigt (in der Sprache der Oberflaeche) und als Text des GitHub-Releases verwendet. Vor jedem Release einen Eintrag fuer die neue Version anlegen, notfalls nur mit Fehlerbehebungen.",
  "versions": [
   {
+   "version": "1.2.3",
+   "date": "2026-10-22",
+   "de": [
+    "Neu: kurze Einführung beim ersten Start mit den wichtigsten Funktionen und den versteckten Lampen-Menüs. Wiederholen über „Einführung“ unten auf der Seite.",
+    "Kartennummern mit Buchstaben wie TG24/TG30 (Trainer-Galerie), GG05/GG70 oder SV107/SV122 lassen sich jetzt direkt eintippen."
+   ],
+   "en": [
+    "New: a short intro on the first start with the most important functions and the hidden light menus. Replay it with “Intro” at the bottom of the page.",
+    "Card numbers with letters such as TG24/TG30 (Trainer Gallery), GG05/GG70 or SV107/SV122 can now be typed in directly."
+   ],
+   "es": [
+    "Nuevo: una breve introducción en el primer inicio con las funciones más importantes y los menús ocultos de las luces. Puedes repetirla con «Introducción» al pie de la página.",
+    "Ahora se pueden escribir directamente números de carta con letras como TG24/TG30 (Galería de Entrenadores), GG05/GG70 o SV107/SV122."
+   ]
+  },
+  {
    "version": "1.2.2",
    "date": "2026-10-22",
    "de": [

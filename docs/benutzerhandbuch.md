@@ -2,6 +2,8 @@
 
 ## 1. Die Hauptseite
 
+**Einführung.** Beim allerersten Start (nach der Sprachwahl) zeigt eine kurze Tour mit höchstens sieben Schritten die wichtigsten Funktionen, auch die versteckten Menüs hinter den Lampen. Kommt später eine wichtige neue Funktion dazu, erscheint nur dieser Schritt. Mit *Einführung* unten auf der Seite kannst du die Tour jederzeit wiederholen.
+
 - **Pokédex-Raster:** alle Pokémon in der Reihenfolge des Nationalen Pokédex. Gefangene zeigen ihre Binder-Karte (grüner Haken = Karte liegt im Binder), fehlende erscheinen als Silhouette. Oben stehen der Fortschritt (gefangen / gesamt), der Wert des Binders und aller Karten.
 - **Blaue Linse (oben links):** schaltet den Kamera-Scan ein und aus.
 - **Titel "Mein Pokédex":** öffnet auf dem Handy das Menü (siehe Abschnitt 8).
@@ -10,7 +12,7 @@
 
 ## 2. Karten hinzufügen
 
-**Per Nummer.** Tippe die Nummer so ein, wie sie auf der Karte steht, z. B. `147/196` (der Teil hinter dem Schrägstrich ist die Größe des Sets). Die App findet Set und Sprache (Deutsch, Englisch, Japanisch) selbst. Passen mehrere Karten (z. B. dieselbe Karte auf Deutsch und Englisch), wählst du die richtige. Wählst du vorher Set und Sprache aus, reicht die Nummer allein (`147`).
+**Per Nummer.** Tippe die Nummer so ein, wie sie auf der Karte steht, z. B. `147/196` (der Teil hinter dem Schrägstrich ist die Größe des Sets). Die App findet Set und Sprache (Deutsch, Englisch, Japanisch) selbst. Passen mehrere Karten (z. B. dieselbe Karte auf Deutsch und Englisch), wählst du die richtige. Wählst du vorher Set und Sprache aus, reicht die Nummer allein (`147`). Nummern mit Buchstaben gehen genauso, z. B. `TG24/TG30` (Trainer-Galerie), `GG05/GG70` (Galar-Galerie) oder `SV107/SV122` (Shiny-Tresor). Mehrere Sets nutzen dieselbe Nummerierung, meist wählst du deshalb aus wenigen Treffern.
 
 **Per Kamera.** Klicke auf die blaue Linse, erlaube den Kamerazugriff und halte die Karte so, dass die Nummer im gelben Rahmen liegt (der Regler ändert die Höhe).
 - Die App liest laufend mit. Nach **zweimal derselben Nummer in Folge** ist die Karte erkannt, der Ergebnis-Dialog erscheint und das Gerät vibriert (Android).

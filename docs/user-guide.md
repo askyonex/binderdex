@@ -4,6 +4,8 @@ The app's interface is German; this guide explains it in English. Menu names are
 
 ## 1. The main screen
 
+**Intro tour.** On the very first start (after choosing the language) a short tour of up to seven steps shows the most important functions, including the hidden menus behind the lights. When a new important feature arrives, only that step is shown. You can replay the tour any time with *Einführung* at the bottom of the page.
+
 - **Pokédex grid:** every Pokémon in national Pokédex order. Caught Pokémon show their binder card (green check = the card is in the binder), missing ones are silhouettes. The header shows progress (caught / total), the value of the binder and of all cards.
 - **Blue lens (top left):** switches the camera scan on and off.
 - **Title "Mein Pokédex":** on phones it opens the menu (see section 8).
@@ -12,7 +14,7 @@ The app's interface is German; this guide explains it in English. Menu names are
 
 ## 2. Adding cards
 
-**By number.** Type the number as printed on the card, for example `147/196` (the part behind the slash is the size of the set). The app finds the set and the language (German, English, Japanese) itself. If several cards match (for example the same card in German and English), pick the right one. If you select a set and a language first, the number alone (`147`) is enough.
+**By number.** Type the number as printed on the card, for example `147/196` (the part behind the slash is the size of the set). The app finds the set and the language (German, English, Japanese) itself. If several cards match (for example the same card in German and English), pick the right one. If you select a set and a language first, the number alone (`147`) is enough. Numbers with letters work the same way, e.g. `TG24/TG30` (Trainer Gallery), `GG05/GG70` (Galarian Gallery) or `SV107/SV122` (Shiny Vault); several sets use the same numbering, so you usually pick from a few matches.
 
 **By camera.** Click the blue lens, allow camera access and hold the card so that the number is inside the yellow frame (the slider changes its height).
 - The app reads continuously. After **two identical reads in a row** the card is recognized, the result dialog appears and the device vibrates (Android).

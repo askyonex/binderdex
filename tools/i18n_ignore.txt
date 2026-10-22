@@ -90,3 +90,7 @@ lang={0}&scope={1}&budget={2}
 .uimg img
 Bug fixes
 Corrección de errores
+#grid .t
+left:50%;top:50%;width:0;height:0
+left:{0}px;top:{1}px;width:{2}px;height:{3}px
+ArrowRight

@@ -182,6 +182,14 @@ textarea{width:100%;padding:8px 10px;font:20px/1.1 var(--vt);background:var(--na
 .mlab{display:contents}.mlab span{display:none}
 .menubtn{padding:0;border:0;border-radius:0;background:none;box-shadow:none;font:inherit;color:inherit;text-transform:inherit;text-shadow:inherit;letter-spacing:inherit;text-align:left;cursor:default}
 .menubtn:active{transform:none;box-shadow:none}
+#tour{display:none;position:fixed;inset:0;z-index:40}
+#tour .thole{position:fixed;border-radius:14px;box-shadow:0 0 0 3px var(--yel,#ffcb05),0 0 0 9999px rgba(4,10,16,.78);transition:all .25s ease;pointer-events:none}
+#tour .tbub{position:fixed;width:min(380px,calc(100vw - 32px));background:var(--panel);border:3px solid var(--yel,#ffcb05);border-radius:16px;padding:16px 18px;color:#fff;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+#tour .tbub h3{margin:0 0 8px;font-size:22px;color:var(--yel,#ffcb05)}#tour .tbub p{margin:0 0 14px;font-size:19px;line-height:1.3}
+#tour .tnav{display:flex;align-items:center;gap:10px}#tour .tdots{flex:1;display:flex;gap:6px}
+#tour .tdots i{width:9px;height:9px;border-radius:50%;background:#4f8396}#tour .tdots i.on{background:var(--yel,#ffcb05)}
+#tour .tnav button{font-size:15px;padding:6px 12px}
+@media (prefers-reduced-motion:reduce){#tour .thole{transition:none}}
 .foot{margin:0 40px 32px;color:var(--mute);font-size:18px;line-height:1.1;text-align:center}
 .foot .ver{display:block;margin-top:6px}.foot .ver a{color:var(--cyan);cursor:pointer;text-decoration:underline}
 #clbody .clv{margin:4px 0 14px}#clbody h3{margin:0 0 6px;font:11px/1.6 var(--px);color:var(--yel)}#clbody h3 small{color:var(--mute);font:inherit}
@@ -467,6 +475,10 @@ textarea{width:100%;padding:8px 10px;font:20px/1.1 var(--vt);background:var(--na
     <div class="acts"><button id="lgsave">Speichern</button></div>
     <p id="lgmsg"></p>
   </div></div></div>
+<div id="tour" role="dialog" aria-modal="true" aria-labelledby="ttitle"><div class="thole"></div><div class="tbub">
+  <h3 id="ttitle"></h3><p id="ttext"></p>
+  <div class="tnav"><div class="tdots"></div><button id="tskip" class="alt">Überspringen</button><button id="tnext">Weiter</button></div>
+</div></div>
 <div id="toasts" class="toasts"></div>
 <div id="lb"><img id="lbimg" alt=""><div id="lbcap"></div></div>
 <script>
@@ -2271,6 +2283,83 @@ function openLangs(first) {
 }
 langUI();
 
+/* ---------- Intro: kurze Tour beim ersten Start, später nur neue Schritte ----------
+   Jeder Schritt hat eine feste id. Gesehene ids merkt sich das Gerät. Beim allerersten Start läuft die ganze Tour;
+   kommt später eine wichtige Funktion dazu, einfach einen Schritt mit neuer id ergänzen (new: true):
+   Geräte, die die Tour schon kennen, zeigen dann nur diesen neuen Schritt. Höchstens 7 Schritte pro Ansicht. */
+const TOUR = [
+  {id: "welcome", t: "Willkommen bei Ninedex!", x: "Dein digitaler Binder: ein Fach pro Pokémon, fehlende siehst du als Silhouette. Die Tour zeigt dir kurz das Wichtigste."},
+  {id: "add", sel: ["#num", "#add"], t: "Karten hinzufügen", x: "Tippe die Nummer unten auf der Karte ein, z. B. 147/196 oder TG24/TG30. Set und Sprache erkennt die App selbst. Mit der großen Linse oben startest du die Kamera."},
+  {id: "grid", sel: ["#grid .t"], t: "Pokémon antippen", x: "Ein Klick auf ein Pokémon zeigt alle seine Karten. Dort fügst du Karten hinzu, setzt sie auf die Wunschliste oder vergibst einen Stern."},
+  {id: "red", desk: true, led: "xpRed", sel: ["#ledRed", "#xpRed"], t: "Rote Lampe: Extras", x: "Die Lampen neben der Linse sind Knöpfe! Rot öffnet Statistik, Binder, Quiz, Grading-Check, Upgrade-Vorschläge und Platzhalter zum Drucken."},
+  {id: "yellow", desk: true, led: "xpYel", sel: ["#ledYel", "#xpYel"], t: "Gelbe Lampe: Einstellungen", x: "Design, Fächer pro Binder-Seite, Töne und Sprache."},
+  {id: "green", desk: true, led: "xpGrn", sel: ["#ledGrn", "#xpGrn"], t: "Grüne Lampe: Filter & Sortierung", x: "Zeigt z. B. nur fehlende Pokémon oder eine Generation. Ein Punkt in der Lampe heißt: Filter aktiv."},
+  {id: "menu", mob: true, sel: ["#menuBtn"], t: "Das Menü", x: "Tippe auf „Mein Pokédex“: Dort findest du Sets, Nebenstapel, Statistik, Binder, Upgrade-Vorschläge, Einstellungen und Filter."},
+  {id: "side", sel: ["#side"], t: "Doppelte und Verkaufen", x: "Ins Binder-Fach kommt eine Karte pro Pokémon, Doppelte landen im Nebenstapel. Von dort verkaufst du sie auf Cardmarket oder tauschst sie."},
+];
+const TOUR_KEY = "tourSeen";
+const tourSeen = () => { try { return JSON.parse(localStorage.getItem(TOUR_KEY) || "null"); } catch (e) { return null; } };
+const tourMark = ids => { try { localStorage.setItem(TOUR_KEY, JSON.stringify([...new Set([...(tourSeen() || []), ...ids])])); } catch (e) {} };
+function tourSteps(all) {
+  const steps = TOUR.filter(s => DESK.matches ? !s.mob : !s.desk), seen = tourSeen();
+  if (all || !seen) return steps;
+  return steps.filter(s => !seen.includes(s.id));
+}
+function tourRect(sel) {                               // gemeinsamer Rahmen aller sichtbaren Ziel-Elemente
+  let r = null;
+  for (const q of sel || []) {
+    const el = $(q); if (!el) continue;
+    const b = el.getBoundingClientRect(); if (!b.width || !b.height) continue;
+    r = r ? {l: Math.min(r.l, b.left), t: Math.min(r.t, b.top), r: Math.max(r.r, b.right), b: Math.max(r.b, b.bottom)} : {l: b.left, t: b.top, r: b.right, b: b.bottom};
+  }
+  return r;
+}
+function startTour(all, onDone) {
+  const steps = tourSteps(all);
+  if (!steps.length) { if (onDone) onDone(); return false; }
+  let i = 0;
+  const T = $("#tour"), hole = T.querySelector(".thole"), bub = T.querySelector(".tbub");
+  const end = () => {
+    T.style.display = "none"; xpOpen(null); window.removeEventListener("resize", draw);
+    tourMark(TOUR.map(s => s.id)); document.removeEventListener("keydown", key);
+    if (onDone) onDone();
+  };
+  function place() {
+    const s = steps[i], pad = 8;
+    let r = tourRect(s.sel);
+    if (r && (r.b < 0 || r.t > innerHeight)) {          // Ziel ausserhalb des Bildschirms: hinscrollen
+      $(s.sel[0]).scrollIntoView({block: "center"}); r = tourRect(s.sel);
+    }
+    const bw = bub.offsetWidth, bh = bub.offsetHeight;
+    if (!r) {
+      hole.style.cssText = `left:50%;top:50%;width:0;height:0`;
+      bub.style.left = Math.max(16, (innerWidth - bw) / 2) + "px"; bub.style.top = Math.max(16, (innerHeight - bh) / 2) + "px";
+      return;
+    }
+    hole.style.cssText = `left:${r.l - pad}px;top:${r.t - pad}px;width:${r.r - r.l + 2 * pad}px;height:${r.b - r.t + 2 * pad}px`;
+    const below = r.b + pad + 14, above = r.t - pad - 14 - bh;
+    const top = below + bh < innerHeight - 8 ? below : above > 8 ? above : Math.max(8, innerHeight - bh - 8);
+    bub.style.top = top + "px";
+    bub.style.left = Math.min(Math.max(16, r.l), innerWidth - bw - 16) + "px";
+  }
+  function draw() {
+    const s = steps[i];
+    xpOpen(s.led || null);
+    $("#ttitle").textContent = (s.new && tourSeen() ? TX("Neu:") + " " : "") + TX(s.t);
+    $("#ttext").textContent = TX(s.x);
+    T.querySelector(".tdots").innerHTML = steps.length > 1 ? steps.map((_, k) => `<i class="${k === i ? "on" : ""}"></i>`).join("") : "";
+    $("#tnext").textContent = TX(i === steps.length - 1 ? "Los geht's" : "Weiter");
+    $("#tskip").style.display = i === steps.length - 1 ? "none" : "";
+    requestAnimationFrame(place);
+  }
+  const key = e => { if (e.key === "Escape") end(); else if (e.key === "ArrowRight" || e.key === "Enter") { e.preventDefault(); $("#tnext").click(); } };
+  $("#tnext").onclick = () => { if (++i >= steps.length) end(); else draw(); };
+  $("#tskip").onclick = end;
+  T.style.display = "block"; window.addEventListener("resize", draw); document.addEventListener("keydown", key);
+  draw(); $("#tnext").focus();
+  return true;
+}
+
 /* ---------- Was ist neu (Changelog nach einem Update, in der Sprache der Oberfläche) ---------- */
 const verNum = v => String(v || "0").split(".").map(n => parseInt(n, 10) || 0);
 const verCmp = (a, b) => { const x = verNum(a), y = verNum(b); for (let i = 0; i < 3; i++) if ((x[i] || 0) !== (y[i] || 0)) return (x[i] || 0) - (y[i] || 0); return 0; };
@@ -2295,25 +2384,32 @@ async function showChangelog(from, to, title) {
 async function changelogCheck() {
   let v; try { v = await (await fetch("/api/version")).json(); } catch (e) { return; }
   APPV = v.version;
-  $(".foot").insertAdjacentHTML("beforeend", `<span class="ver">${TX("Version")} ${v.version} · <a id="clopen">${TX("Was ist neu?")}</a></span>`);
+  $(".foot").insertAdjacentHTML("beforeend", `<span class="ver">${TX("Version")} ${v.version} · <a id="clopen">${TX("Was ist neu?")}</a> · <a id="touropen">${TX("Einführung")}</a></span>`);
+  $("#touropen").onclick = () => { window.scrollTo(0, 0); startTour(true); };
   $("#clopen").onclick = () => showChangelog("", v.version, TX("Was ist neu"));
   const KEY = "changelogSeen";
   let seen = null; try { seen = localStorage.getItem(KEY); } catch (e) {}
   const mark = () => { try { localStorage.setItem(KEY, v.version); } catch (e) {} };
-  if ($("#lgmodal").style.display === "block") return mark();          // Erststart mit Sprachauswahl: nichts Neues zu zeigen
+  if ($("#lgmodal").style.display === "block") return mark();          // Erststart mit Sprachauswahl: nichts Neues zu zeigen (Tour folgt nach der Sprachwahl)
   let from = null;
   if (seen) { if (verCmp(seen, v.version) < 0) from = seen; }           // dieses Gerät kannte eine ältere Version
   else if (v.prev && v.prev !== v.version) from = v.prev;              // Update laut Server (erstes Öffnen auf diesem Gerät)
   mark();
+  await TOUR_READY;
+  if (startTour(false, () => from !== null && showLog())) return;     // Intro zuerst, "Was ist neu" danach
   if (from === null) return;
+  return showLog();
+  async function showLog() {
   // "0" = Update von einer Version ohne diese Anzeige: nur die aktuelle Version zeigen
   showChangelog(from === "0" ? (await changelogData()).filter(x => verCmp(x.version, v.version) < 0).map(x => x.version)[0] || "" : from,
                 v.version, TX("Neu in Version {0}").replace("{0}", v.version));
+  }
 }
 $("#clclose").onclick = $("#clok").onclick = () => $("#clmodal").style.display = "none";
+let TOUR_READY = new Promise(r => { window._tourReady = r; });   // Tour erst, wenn die Pokémon-Kacheln da sind
 changelogCheck();
 
-load(); loadSets(); loadAI();
+load().finally(() => setTimeout(() => window._tourReady(), 200)); loadSets(); loadAI();
 fetch("/api/dens").then(r => r.json()).then(d => DENS = d).catch(() => {});
 </script>
 </body>

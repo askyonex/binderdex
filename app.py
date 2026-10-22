@@ -23,7 +23,7 @@ DB = os.environ.get("DB_PATH", "pokedex.db")  # fuer Docker: /data/pokedex.db
 TCG = "https://api.tcgdex.net/v2"
 POKE = "https://pokeapi.co/api/v2"
 LANGS = ["de", "en", "ja"]
-I18N_VERSION = "5"  # bei geaenderten Uebersetzungen erhoehen, damit Browser das neue Woerterbuch laden
+I18N_VERSION = "6"  # bei geaenderten Uebersetzungen erhoehen, damit Browser das neue Woerterbuch laden
 
 app = Flask(__name__, static_folder="static")
 progress = {"done": 0, "total": 0, "running": False}
@@ -462,8 +462,19 @@ def get_sets(lang):
     return _sets[lang]
 
 
+def num_variants(num):
+    """Schreibweisen einer Kartennummer: "008" findet auch "8", "TG4" auch "TG04" (Trainer-Galerie, Galarian Gallery, Shiny Vault)."""
+    if num.isdigit():
+        return list(dict.fromkeys([num, str(int(num)), num.zfill(3), num.zfill(2)]))
+    m = re.fullmatch(r"([A-Za-z]+)0*(\d+)", num)
+    if m:
+        p, d = m.group(1).upper(), m.group(2)
+        return list(dict.fromkeys([num, p + d, p + d.zfill(2), p + d.zfill(3)]))
+    return [num]
+
+
 def find_card(lang, set_id, num):
-    cands = [num, str(int(num)), num.zfill(3), num.zfill(2)] if num.isdigit() else [num]  # "008" findet auch "8" und umgekehrt
+    cands = num_variants(num)
     for cand in dict.fromkeys(cands):
         try:
             return fetch(f"{TCG}/{lang}/cards/{set_id}-{cand}")
@@ -1703,10 +1714,48 @@ def dens():
     return jsonify(sorted(out, reverse=True))
 
 
+def prefixed_cands(num, den, langs, set_id=""):
+    """Nummern mit Buchstaben wie TG24/TG30 (Trainer-Galerie), GG05/GG70, SV107/SV122: Diese Karten liegen bei TCGdex
+    teils in eigenen Unter-Sets (z. B. swsh12tg), teils im Haupt-Set. Gesucht wird ueber die Kartennummer selbst
+    und ueber Sets, deren Kennung auf das Kuerzel endet (tg, gg, ...)."""
+    m = re.fullmatch(r"([A-Za-z]+)0*(\d+)", num)
+    if not m:
+        return []
+    pre = m.group(1).lower()
+    out = []
+    for l in langs:
+        sets = {s["id"]: s for s in get_sets(l)}
+        ok = lambda sid: not set_id or sid == set_id or sid.startswith(set_id)  # das Kuerzel (TG, GG, ...) ist selbst schon eindeutig genug
+        for v in num_variants(num):  # alle Karten mit genau dieser Nummer (Filter der Kartendatenbank)
+            try:
+                res = fetch(f"{TCG}/{l}/cards?localId=eq:{urllib.parse.quote(v)}")
+            except Exception:
+                continue
+            if isinstance(res, list) and len(res) < 300:
+                out += [(l, c["id"].rsplit("-", 1)[0], c.get("localId") or v) for c in res if ok(c["id"].rsplit("-", 1)[0])]
+                if out:
+                    break
+        # Unter-Sets mit passendem Kuerzel (z. B. swsh12tg fuer die Trainer-Galerie von Silberne Sturmwinde)
+        out += [(l, sid, num) for sid, st in sets.items() if sid.lower().endswith(pre) and ok(sid)
+                and (not den or (st.get("cardCount") or {}).get("official") in (den, None))]
+        if set_id and set_id in sets and not any(c[1] == set_id for c in out):
+            out.append((l, set_id, num))  # gewaehltes Set: Nummer dort direkt versuchen
+    return list(dict.fromkeys(out))[:12]
+
+
 def detect_cards(num, den, set_id="", lang="auto", pref=""):
     """Findet Karte(n) zu Nummer + Nenner (Set-Groesse) in allen Sprachen. Mit set_id nur in diesem Set."""
     langs = [lang] if lang in LANGS else list(LANGS)
     langs.sort(key=lambda l: l != pref)  # erkannte Sprache zuerst
+    if not num.isdigit() and re.fullmatch(r"[A-Za-z]+0*\d+", num):
+        found = slot_cards(prefixed_cands(num, den, langs, set_id), num)
+        seen, uniq = set(), []
+        for r in found:  # dieselbe Karte kann ueber mehrere Wege gefunden werden
+            if r["id"] not in seen:
+                seen.add(r["id"])
+                uniq.append(r)
+        if uniq:
+            return uniq
     cands = []
     for l in langs:
         for st in get_sets(l):
@@ -1761,11 +1810,9 @@ def slot_cards(cands, num):
 @app.get("/api/detect")
 def detect():
     """Findet Karte(n) zu Nummer + Nenner (Set-Groesse) in allen Sprachen. Mit set=... nur in diesem Set."""
-    num = request.args["num"].split("/")[0].strip()
-    try:
-        den = int(request.args.get("den") or 0)
-    except ValueError:
-        den = 0
+    num = re.sub(r"\s+", "", request.args["num"].split("/")[0])
+    m = re.fullmatch(r"[A-Za-z]*\s*0*(\d+)", (request.args.get("den") or "").strip())  # "196" oder "TG30"
+    den = int(m.group(1)) if m else 0
     return jsonify(detect_cards(num, den, request.args.get("set", "").strip(), request.args.get("lang", "auto"), request.args.get("pref", "")))
 
 

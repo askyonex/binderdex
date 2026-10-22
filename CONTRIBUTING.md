@@ -33,6 +33,10 @@ Open <http://localhost:5000>. Use a separate `test.db` so you do not touch your 
 - Test your change with a fresh database and with an existing one (the database is migrated automatically in `init()`).
 - Mention the data source and terms if you add a new external service.
 
+## Intro tour
+
+The intro tour is the `TOUR` list in `static/index.html` (max. 7 steps per view, desktop steps `desk: true`, phone steps `mob: true`). For an important new feature add a step with a **new** `id` and `new: true`: devices that already saw the tour then show only that step, prefixed with "Neu:". Add the texts to `static/i18n/*.json`.
+
 ## Reporting bugs
 
 Please include what you did, what you expected, what happened, your browser and how you run the app (local, Docker, Raspberry Pi). For price or image problems the diagnostic endpoints help: `/api/pricecheck?lang=de&id=<card id>`, `/api/imgcheck?lang=ja&set=<set id>`, `/api/seriesdebug?lang=ja`.
