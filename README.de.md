@@ -28,6 +28,8 @@ Kein Konto, keine Cloud, kein API-Schlüssel. Die App läuft als Desktop-App unt
 
 ## Funktionen
 
+> **Verstecktes Extra am PC: Die Lampen sind Knöpfe.** Die drei kleinen Lampen neben der großen Kamera-Linse oben öffnen versteckte Menüs: 🔴 **Rot** = *Extras* (Statistik, Binder, Quiz, Grading-Check, Upgrade-Vorschläge, Platzhalter, Preise aktualisieren), 🟡 **Gelb** = *Einstellungen* (Design, Binder-Seite, Töne, Sprache), 🟢 **Grün** = *Filter & Sortierung* (ein dunkler Punkt zeigt einen aktiven Filter). Erneuter Klick oder Esc schließt das Menü. Auf dem Handy steckt alles im Burger-Menü hinter **„Mein Pokédex“**.
+
 **Pokédex und Binder**
 - **Deutsch, Englisch und Spanisch** (Oberfläche, Pokémon-Namen, Pokédex-Einträge, Exporte), pro Gerät umschaltbar; weitere Sprachen lassen sich mit einer Wörterbuch-Datei und wenigen Zeilen Code ergänzen ([docs/translating.md](docs/translating.md))
 - Alle Pokémon in der Reihenfolge des Nationalen Pokédex mit Fortschrittsbalken, fehlende als Silhouette
@@ -149,7 +151,7 @@ Die App speichert zwischen, was geht, und fragt in kleinen Paketen ab. Bitte bea
 
 - Weitere Sprachen (Französisch, Italienisch, ...): Beiträge willkommen, siehe [docs/translating.md](docs/translating.md)
 - Mehrere Sammlungen (Profile) in einer Instanz
-- Preisalarm für Wunschkarten, Upgrade-Vorschläge (bessere Karte zu einem Pokémon)
+- Preisalarm für Wunschkarten
 - Selbst gehostete Schriften und OCR-Dateien (offline nutzbar, ohne CDN)
 - Englische Code-Kommentare
 

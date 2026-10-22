@@ -23,11 +23,13 @@ DB = os.environ.get("DB_PATH", "pokedex.db")  # fuer Docker: /data/pokedex.db
 TCG = "https://api.tcgdex.net/v2"
 POKE = "https://pokeapi.co/api/v2"
 LANGS = ["de", "en", "ja"]
-I18N_VERSION = "4"  # bei geaenderten Uebersetzungen erhoehen, damit Browser das neue Woerterbuch laden
+I18N_VERSION = "5"  # bei geaenderten Uebersetzungen erhoehen, damit Browser das neue Woerterbuch laden
 
 app = Flask(__name__, static_folder="static")
 progress = {"done": 0, "total": 0, "running": False}
 price_prog = {"done": 0, "total": 0, "running": False, "missing": 0, "errors": 0, "last_error": ""}
+upg_prog = {"done": 0, "total": 0, "running": False, "stage": "", "error": "", "lang": ""}
+_faidx = {}  # Sprache -> (Zeit, {Pokedex-Nr.: [Kurzform der Fullart-Karten]})
 _sets = {}
 _series = {}
 # Sets-Ansicht: alle Serien der Kartendatenbank, deren Sets ab MIN_DATE erschienen sind (ausser den hier genannten)
@@ -122,6 +124,8 @@ def init():
             best INTEGER, low INTEGER, high INTEGER, limiting TEXT, conf TEXT, cen_f REAL, cen_b REAL, subs TEXT, notes TEXT, raw_price REAL);
         CREATE TABLE IF NOT EXISTS session_log(id INTEGER PRIMARY KEY AUTOINCREMENT, ts TEXT, card_id TEXT, name TEXT, set_name TEXT,
             image TEXT, price REAL, delta INTEGER, newc INTEGER, newp INTEGER);
+        CREATE TABLE IF NOT EXISTS upgrade_cache(card_id TEXT PRIMARY KEY, lang TEXT, dex_id INTEGER, name TEXT, set_name TEXT,
+            set_id TEXT, local_id TEXT, rarity TEXT, image TEXT, price REAL, cm_id INTEGER, at TEXT);
         """
     )
     for col in ("name_en TEXT", "name_ja TEXT", "name_es TEXT"):  # Namen in Englisch, Japanisch, Spanisch (Migration)
@@ -329,6 +333,127 @@ def refresh_prices(only_new=False):
                 price_prog["done"] += 1
     finally:
         price_prog["running"] = False
+
+
+# Fullart-Seltenheiten, falls die Kartendatenbank keine Liste liefert (englische Namen von TCGdex)
+FULLART_RARITIES = ("Illustration rare", "Special illustration rare", "Ultra Rare", "Hyper rare", "Secret Rare",
+                    "Rare Secret", "Rare Rainbow", "Rare Ultra", "Rare Holo VMAX", "Full Art Trainer", "Mega Hyper Rare")
+UPGRADE_DAYS = 7  # so lange gelten zwischengespeicherte Preise der Vorschlaege
+
+
+def fullart_index(lang):
+    """Alle Fullart-Karten einer Sprache (Kurzform), nach Pokedex-Nummer gruppiert. Zwischengespeichert fuer 1 Tag."""
+    hit = _faidx.get(lang)
+    if hit and time.time() - hit[0] < 86400:
+        return hit[1]
+    try:
+        rars = [r for r in fetch(f"{TCG}/{lang}/rarities") if isinstance(r, str) and is_fullart(r)]
+    except Exception:
+        rars = []
+    if not rars:
+        rars = [r for r in FULLART_RARITIES if is_fullart(r)]
+    index, ok = {}, 0
+    for rar in rars:
+        lst = None
+        for url in (f"{TCG}/{lang}/rarities/{urllib.parse.quote(rar)}", f"{TCG}/{lang}/cards?rarity=eq:{urllib.parse.quote(rar)}"):
+            try:
+                d = fetch(url)
+            except Exception:
+                continue
+            lst = d.get("cards") if isinstance(d, dict) else d
+            if isinstance(lst, list):
+                break
+            lst = None
+        if lst is None:
+            continue
+        ok += 1
+        for c in lst:
+            did = guess_dex(c.get("name") or "")
+            if did:
+                c = dict(c, rarity=rar)
+                index.setdefault(did, {})[c["id"]] = c
+    if not ok:
+        raise RuntimeError("Fullart-Karten nicht abrufbar")
+    index = {k: list(v.values()) for k, v in index.items()}
+    _faidx[lang] = (time.time(), index)
+    return index
+
+
+def upgrade_targets(scope):
+    """Pokedex-Nummern ohne Fullart im Binder: nur mit Binder-Karte ("binder") oder alle ("all")."""
+    binder = {r["dex_id"]: r["rarity"] for r in q("SELECT b.dex_id, c.rarity FROM binder b LEFT JOIN cards c ON c.id = b.card_id WHERE b.card_id IS NOT NULL")}
+    if scope == "all":
+        return [r["id"] for r in q("SELECT id FROM pokemon ORDER BY id") if not is_fullart(binder.get(r["id"]))]
+    return sorted(d for d, rar in binder.items() if not is_fullart(rar))
+
+
+def find_upgrades(lang, scope):
+    """Hintergrundjob: Preise der Fullart-Karten fuer alle Ziel-Pokemon holen und zwischenspeichern."""
+    upg_prog.update(running=True, done=0, total=0, stage="list", error="", lang=lang)
+    try:
+        index = fullart_index(lang)
+        fresh = (datetime.date.today() - datetime.timedelta(days=UPGRADE_DAYS)).isoformat()
+        known = {r["card_id"] for r in q("SELECT card_id FROM upgrade_cache WHERE lang=? AND at>=?", (lang, fresh))}
+        todo = [c for d in upgrade_targets(scope) for c in index.get(d, [])
+                if (c["id"] if lang == "de" else f"{lang}:{c['id']}") not in known]
+        upg_prog.update(stage="prices", total=len(todo))
+        today = datetime.date.today().isoformat()
+
+        def one(c):
+            try:
+                return card_row(fetch(f"{TCG}/{lang}/cards/{c['id']}"), lang), c
+            except Exception:
+                return None, c
+
+        with ThreadPoolExecutor(8) as ex:
+            for row, c in ex.map(one, todo):
+                if row and row.get("category") not in ("Trainer", "Energy"):
+                    did = row["dex_id"] or guess_dex(row["name"])
+                    if did:
+                        run("INSERT OR REPLACE INTO upgrade_cache(card_id, lang, dex_id, name, set_name, set_id, local_id, rarity, image, price, cm_id, at) "
+                            "VALUES(?,?,?,?,?,?,?,?,?,?,?,?)",
+                            (row["id"], lang, did, row["name"], row["set_name"], row["set_id"], row["local_id"], row["rarity"] or c.get("rarity", ""),
+                             row["image"], row["price"] if row["price"] is not None else row["price_holo"], row["cm_id"], today))
+                upg_prog["done"] += 1
+        upg_prog["stage"] = "done"
+    except Exception as e:
+        upg_prog.update(stage="error", error=str(e))
+    finally:
+        upg_prog["running"] = False
+
+
+def upgrade_list(lang, scope, budget=None):
+    """Guenstigste Fullart-Karte je Ziel-Pokemon (ohne Karten, die schon in der Sammlung sind)."""
+    owned = {r["id"] for r in q("SELECT id FROM cards")}
+    cache = {}
+    for r in q("SELECT * FROM upgrade_cache WHERE lang=? AND price IS NOT NULL AND price > 0", (lang,)):
+        if r["card_id"] not in owned and r["price"] < cache.get(r["dex_id"], {}).get("price", 1e9):
+            cache[r["dex_id"]] = r
+    cur = {r["dex_id"]: r for r in q("SELECT b.dex_id, c.name, c.set_name, c.local_id, c.rarity, c.image, c.lang FROM binder b JOIN cards c ON c.id = b.card_id")}
+    names = {r["id"]: r["n"] for r in q(f"SELECT p.id, {pname()} AS n FROM pokemon p")}
+    items, missing = [], 0
+    for d in upgrade_targets(scope):
+        best = cache.get(d)
+        if not best:
+            missing += 1
+            continue
+        items.append(dict(dex_id=d, dex_name=names.get(d) or "", current=cur.get(d), card=dict(
+            id=best["card_id"], name=best["name"], set_name=best["set_name"], set_id=best["set_id"], local_id=best["local_id"],
+            rarity=best["rarity"], image=best["image"], price=best["price"], cm_id=best["cm_id"], dex_id=d, lang=lang,
+            cm=cm_link(dict(name=best["name"], local_id=best["local_id"], cm_id=best["cm_id"])),
+            wished=False)))
+    wish = {r["card_id"] for r in q("SELECT card_id FROM wishlist")}
+    for it in items:
+        it["card"]["wished"] = it["card"]["id"] in wish
+    items.sort(key=lambda it: it["card"]["price"])
+    if budget:
+        acc, keep = 0.0, []
+        for it in items:
+            if acc + it["card"]["price"] <= budget + 1e-9:
+                acc += it["card"]["price"]
+                keep.append(it)
+        items = keep
+    return items, missing
 
 
 def get_sets(lang):
@@ -1389,6 +1514,82 @@ small{{color:#5b6477}}tfoot td{{font-weight:700;border-top:2px solid #1f2433}}bu
     return Response(page, mimetype="text/html")
 
 
+@app.get("/platzhalter")
+def placeholder_page():
+    """Druckbare Platzhalter in Kartengroesse (63 x 88 mm) fuer leere Binder-Faecher: Nummer, Name, Silhouette."""
+    import html
+    a = request.args
+    mode = a.get("mode") if a.get("mode") in ("miss", "nofa", "all") else "miss"
+    bs = int(a.get("bs")) if a.get("bs") in ("9", "12", "16") else 9
+    layout = "binder" if a.get("layout") == "binder" else "compact"
+    style = a.get("style") if a.get("style") in ("light", "dark", "color") else "light"
+    gen = a.get("gen", "")
+    try:
+        lo, hi = int(a.get("from") or 1), int(a.get("to") or 9999)
+    except ValueError:
+        lo, hi = 1, 9999
+    for g in GENS:
+        if g[0] == gen:
+            lo, hi = max(lo, g[2]), min(hi, g[3])
+    binder = {r["dex_id"]: r["rarity"] for r in q("SELECT b.dex_id, c.rarity FROM binder b LEFT JOIN cards c ON c.id = b.card_id WHERE b.card_id IS NOT NULL")}
+    mons = q(f"SELECT p.id, {pname()} AS n FROM pokemon p WHERE p.id BETWEEN ? AND ? ORDER BY p.id", (lo, hi))
+
+    def wanted(d):
+        return mode == "all" or (mode == "miss" and d not in binder) or (mode == "nofa" and not is_fullart(binder.get(d)))
+
+    def card(m):
+        d = m["id"]
+        return (f"<div class='pc'><div class='nr'>#{d:03d}</div><img src='https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/{d}.png' alt='' onerror=\"this.style.visibility='hidden'\">"
+                f"<div class='nm'>{html.escape(m['n'] or '')}</div><div class='sl'>{tr('Seite')} {(d - 1) // bs + 1} · {tr('Platz')} {(d - 1) % bs + 1}</div></div>")
+
+    slots = []
+    if layout == "binder":  # ein Druckblatt je Binder-Seite, belegte Faecher bleiben leer
+        pages = {}
+        for m in mons:
+            pages.setdefault((m["id"] - 1) // bs, []).append(m)
+        for pg in sorted(pages):
+            row = {m["id"]: m for m in pages[pg]}
+            cells = [card(row[d]) if d in row and wanted(d) else "<div class='pc blank'></div>" for d in range(pg * bs + 1, pg * bs + bs + 1)]
+            for i in range(0, len(cells), 9):  # 12er/16er-Seiten passen nicht auf ein A4-Blatt -> in 9er-Bloecke teilen
+                if any("blank" not in c for c in cells[i:i + 9]):
+                    slots.append(cells[i:i + 9])
+    else:
+        flat = [card(m) for m in mons if wanted(m["id"])]
+        slots = [flat[i:i + 9] for i in range(0, len(flat), 9)]
+    count = sum(1 for sh in slots for c in sh if "blank" not in c)
+    sheets = "".join(f"<section class='sheet'>{''.join(sh)}</section>" for sh in slots)
+    sel = lambda name, opts, cur: f"<select name='{name}'>" + "".join(
+        f"<option value='{v}'{' selected' if v == cur else ''}>{html.escape(t)}</option>" for v, t in opts) + "</select>"
+    form = (f"<form class='no' method='get'><input type='hidden' name='bs' value='{bs}'>"
+            f"<label>{tr('Welche Pokémon')} " + sel("mode", [("miss", "Ohne Karte im Binder"), ("nofa", "Ohne Fullart im Binder"), ("all", "Alle")], mode) + "</label> "
+            f"<label>{tr('Generation')} " + sel("gen", [("", "Alle")] + [(g[0], f"{g[0]} · {g[1]}") for g in GENS], gen) + "</label> "
+            f"<label>{tr('Nr. von')} <input type='number' name='from' min='1' value='{a.get('from', '')}' style='width:80px'></label> "
+            f"<label>{tr('bis')} <input type='number' name='to' min='1' value='{a.get('to', '')}' style='width:80px'></label> "
+            f"<label>{tr('Anordnung')} " + sel("layout", [("compact", "Platzsparend (9 pro Blatt)"), ("binder", "Wie im Binder (1 Blatt je Seite)")], layout) + "</label> "
+            f"<label>{tr('Bild')} " + sel("style", [("light", "Silhouette hell (spart Tinte)"), ("dark", "Silhouette dunkel"), ("color", "Farbig")], style) + "</label> "
+            f"<button>{tr('Anzeigen')}</button> <button type='button' onclick='window.print()'>{tr('Drucken / Als PDF speichern')}</button></form>")
+    img = {"light": "filter:brightness(0);opacity:.16", "dark": "filter:brightness(0);opacity:.75", "color": ""}[style]
+    meta_inc("exports")
+    page = f"""<!doctype html><html lang="de"><head><meta charset="utf-8">{i18n_head()}<title>Binder-Platzhalter</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>body{{font:15px/1.35 system-ui,sans-serif;margin:24px;color:#1f2433;background:#eef1f5}}h1{{margin:0 0 4px}}
+form{{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin:12px 0}}select,input,button{{font-size:14px;padding:5px 8px}}button{{cursor:pointer}}
+.sheet{{width:189mm;display:grid;grid-template-columns:repeat(3,63mm);grid-auto-rows:88mm;background:#fff;margin:0 auto 14px;box-shadow:0 1px 6px rgba(0,0,0,.15)}}
+.pc{{box-sizing:border-box;border:1px dashed #9aa3b2;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:5mm 4mm;overflow:hidden}}
+.pc .nr{{position:absolute;top:3mm;left:4mm;font:700 13pt/1 system-ui,sans-serif;color:#5b6477}}
+.pc img{{width:46mm;height:46mm;object-fit:contain;{img}}}
+.pc .nm{{margin-top:4mm;font:700 13pt/1.15 system-ui,sans-serif;text-align:center}}
+.pc .sl{{position:absolute;bottom:3mm;font-size:8pt;color:#7a8396}}.pc.blank{{border-color:transparent}}
+small{{color:#5b6477}}
+@page{{size:A4;margin:10mm}}
+@media print{{.no{{display:none}}body{{margin:0;background:#fff}}.sheet{{box-shadow:none;margin:0 auto;break-after:page}}.sheet:last-child{{break-after:auto}}}}</style></head><body>
+<div class="no"><h1>Binder-Platzhalter</h1><div>{count} {tr('Platzhalter in Kartengröße (63 × 88 mm) zum Ausschneiden. Beim Drucken „Tatsächliche Größe“ bzw. 100 % wählen.')}</div>
+{form}</div>
+{sheets or '<p>Keine passenden Pokémon gefunden.</p>'}
+<p class="no"><small>Bilder: PokéAPI (offizielle Artworks). Erstellt mit Ninedex.</small></p></body></html>"""
+    return Response(page, mimetype="text/html")
+
+
 @app.get("/api/session")
 def session_get():
     return jsonify(session_summary())
@@ -2174,6 +2375,29 @@ def pricecheck():
         return jsonify(name=c.get("name"), hat_preisfeld="pricing" in c, pricing=c.get("pricing"), berechnet=best_price(c))
     except Exception as e:
         return jsonify(fehler=str(e)), 502
+
+
+@app.get("/api/upgrades")
+def upgrades_get():
+    lang = request.args.get("lang", "de") if request.args.get("lang") in ("de", "en") else "de"
+    scope = "all" if request.args.get("scope") == "all" else "binder"
+    try:
+        budget = float(str(request.args.get("budget") or "").replace(",", ".")) or None
+    except ValueError:
+        budget = None
+    items, missing = upgrade_list(lang, scope, budget)
+    return jsonify(items=items, missing=missing, total=round(sum(i["card"]["price"] for i in items), 2),
+                   targets=len(upgrade_targets(scope)), progress=upg_prog)
+
+
+@app.post("/api/upgrades/refresh")
+def upgrades_refresh():
+    d = request.json or {}
+    lang = d.get("lang") if d.get("lang") in ("de", "en") else "de"
+    if not upg_prog["running"]:
+        upg_prog["running"] = True
+        threading.Thread(target=find_upgrades, args=(lang, "all" if d.get("scope") == "all" else "binder"), daemon=True).start()
+    return jsonify(ok=True, progress=upg_prog)
 
 
 @app.post("/api/prices/refresh")

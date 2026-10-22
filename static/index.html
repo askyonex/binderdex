@@ -45,7 +45,7 @@ header{position:sticky;top:0;z-index:5;background:var(--red);padding:18px 40px 2
 .xpanel .mlab{display:inline-flex;align-items:center;gap:8px}.xpanel .mlab span{display:none;font:8px/1.4 var(--px);color:var(--cyan)}
 #xpGrn .mlab:first-of-type span{display:inline}
 .xpanel label{color:#fff}
-@media (min-width:701px){#statBtn,#binderBtn,#quizBtn,#gradeBtn,#prices,#apprRow{display:none}}
+@media (min-width:701px){#statBtn,#binderBtn,#quizBtn,#gradeBtn,#upgBtn,#phBtn,#prices,#apprRow{display:none}}
 @media (prefers-reduced-motion:reduce){.ledbtn[aria-expanded="true"],.xpanel.open{animation:none}}
 h1{margin:0;flex:1;font:400 20px/1.4 var(--px);color:#fff;text-transform:uppercase;text-shadow:3px 3px 0 var(--navy)}
 .stats{margin-left:auto;flex:1;min-width:280px;max-width:420px;background:var(--navy);border-radius:12px;padding:12px 16px;box-shadow:0 0 0 3px var(--cyan-d)}
@@ -156,6 +156,13 @@ figure .noimg{width:200px}
 .sbar i{display:block;height:100%;background:repeating-linear-gradient(90deg,var(--cyan) 0 8px,transparent 8px 10px)}
 .grow{display:flex;align-items:center;gap:12px;margin:6px 0}.grow .gl{width:190px;font-size:21px;color:#fff}.grow .gn{width:96px;text-align:right;color:var(--mute)}
 .chart{width:100%;height:auto;background:var(--tile);border-radius:10px}
+.ubar{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:end;margin:6px 0 12px}.ubar label{max-width:100%}.ubar select{max-width:100%}
+.usum{font-size:20px;margin:8px 0 12px}.usum b{color:var(--yel,#ffcb05)}
+.ulist{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.uit{display:grid;grid-template-columns:64px 1fr;gap:6px 10px;align-items:start;padding:10px;background:var(--tile);border-radius:10px;box-shadow:0 0 0 2px var(--cyan)}
+.uit .uimg img{width:64px;border-radius:5px;display:block;cursor:zoom-in}.uit .unow{grid-column:1/-1;font-size:14px;opacity:.8}
+.uit .uprice{font-size:20px;font-weight:700}.uit .uact{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}
+.uit .uact a,.uit .uact button{font-size:14px;padding:5px 10px}
 .topg{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px}
 .ach{display:inline-block;margin:4px 6px 4px 0;padding:8px 12px;background:var(--tile);border-radius:8px;box-shadow:0 0 0 2px var(--yel);font-size:21px;color:#fff;line-height:1.1}
 .ach small{display:block;color:var(--mute);font-size:18px}.ach.lock{box-shadow:0 0 0 2px #1f4f5f;opacity:.5}
@@ -294,6 +301,8 @@ textarea{width:100%;padding:8px 10px;font:20px/1.1 var(--vt);background:var(--na
     <button data-proxy="binderBtn">Binder</button>
     <button data-proxy="quizBtn">Quiz</button>
     <button data-proxy="gradeBtn">Grading-Check</button>
+    <button data-proxy="upgBtn">Upgrade-Vorschläge</button>
+    <button data-proxy="phBtn">Platzhalter drucken</button>
     <button data-proxy="prices">Preise aktualisieren</button>
   </div>
   <div id="xpYel" class="xpanel" role="group" aria-label="Einstellungen"><span class="xlab">Einstellungen</span></div>
@@ -316,6 +325,8 @@ textarea{width:100%;padding:8px 10px;font:20px/1.1 var(--vt);background:var(--na
       <button id="binderBtn" class="alt">Binder</button>
       <button id="quizBtn" class="alt">Quiz</button>
       <button id="gradeBtn" class="alt">Grading-Check</button>
+      <button id="upgBtn" class="alt">Upgrade-Vorschläge</button>
+      <button id="phBtn" class="alt">Platzhalter drucken</button>
       <div class="mh">Aktionen</div>
       <button id="prices" class="alt">Preise aktualisieren</button>
       <button id="sessBtn" class="alt">Pack-Session starten</button>
@@ -390,6 +401,19 @@ textarea{width:100%;padding:8px 10px;font:20px/1.1 var(--vt);background:var(--na
 <div id="bmodal" class="ov"><div class="bx">
   <div class="hd"><h2 id="btitle">Binder</h2><button id="bclose" class="alt">Schließen</button></div>
   <div class="bd" id="bbody"></div>
+</div></div>
+<div id="umodal" class="ov"><div class="bx">
+  <div class="hd"><h2>Upgrade-Vorschläge</h2><button id="uclose" class="alt">Schließen</button></div>
+  <div class="bd">
+    <p>Für Pokémon im Binder ohne Fullart sucht die App die günstigste Fullart-Karte (Cardmarket-Trend), die du noch nicht hast.</p>
+    <div class="ubar">
+      <label>Kartensprache <select id="uLang"><option value="de">Deutsch</option><option value="en">Englisch</option></select></label>
+      <label>Umfang <select id="uScope"><option value="binder">Pokémon im Binder ohne Fullart</option><option value="all">Alle Pokémon ohne Fullart (dauert länger)</option></select></label>
+      <label>Budget (€) <input id="uBudget" type="number" min="0" step="1" placeholder="25" style="width:110px"></label>
+      <button id="uSearch">Fullarts suchen</button>
+    </div>
+    <div id="ubody"></div>
+  </div>
 </div></div>
 <div id="qmodal" class="ov"><div class="bx" style="max-width:640px">
   <div class="hd"><h2>Wer ist das Pokémon?</h2><button id="qclose" class="alt">Schließen</button></div>
@@ -1089,7 +1113,8 @@ function openBinder(page) {
       <span>${filled} von ${slots.length} Fächern gefüllt</span>
       <button class="alt" data-bp="${BP + 1}" ${BP >= pages ? "disabled" : ""}>Weiter ›</button>
       <label>Seite <input id="bpage" type="number" min="1" max="${pages}" value="${BP}" style="width:72px"></label>
-      <label>Pokémon Nr. <input id="bnr" type="number" min="1" max="${total}" style="width:84px"></label><button id="bgo" class="alt">Springen</button></div>
+      <label>Pokémon Nr. <input id="bnr" type="number" min="1" max="${total}" style="width:84px"></label><button id="bgo" class="alt">Springen</button>
+      <button id="bph" class="alt" title="Platzhalter für die leeren Fächer dieser Seite drucken">Platzhalter drucken</button></div>
     <div class="bpage" style="--cols:${bcols(n)}">${slots.map(x => `<div class="bslot ${x.cid ? "own" : "miss"}" data-id="${x.id}" data-n="${x.n}" data-name="${x.name}">
         <span class="bn">Platz ${(x.id - 1) % n + 1}</span>${x.cid ? badge(x.lang, true) : ""}
         <img loading="lazy" src="${x.image || art(x.id)}" alt="${x.name}" data-dex="${x.id}" onerror="imgFail(this)">
@@ -2059,7 +2084,7 @@ document.addEventListener("keydown", e => {
 const closeMenu = () => { $("#menuWrap").classList.remove("open"); $("#menuBtn").setAttribute("aria-expanded", "false"); };
 $("#menuBtn").onclick = () => { const o = $("#menuWrap").classList.toggle("open"); $("#menuBtn").setAttribute("aria-expanded", String(o)); };
 $("#menuClose").onclick = closeMenu;
-for (const id of ["#setsBtn", "#side", "#tradeBtn", "#statBtn", "#prices", "#pdGo"]) $(id).addEventListener("click", closeMenu);   // nach der Auswahl Menü zuklappen (nur auf dem Handy sichtbar)
+for (const id of ["#setsBtn", "#side", "#tradeBtn", "#statBtn", "#prices", "#pdGo", "#upgBtn", "#phBtn"]) $(id).addEventListener("click", closeMenu);   // nach der Auswahl Menü zuklappen (nur auf dem Handy sichtbar)
 
 function aiFill() {
   $("#aiProv").value = AIC.provider || ""; $("#aiUrl").value = AIC.url || ""; $("#aiOModel").value = AIC.ollama_model || ""; $("#aiGModel").value = AIC.gemini_model || "";
@@ -2086,12 +2111,74 @@ $("#binderBtn").onclick = () => openBinder(1);
 $("#bclose").onclick = () => $("#bmodal").style.display = "none";
 $("#bbody").onclick = e => {
   const nav = e.target.closest("[data-bp]"); if (nav && !nav.disabled) return openBinder(+nav.dataset.bp);
+  if (e.target.id === "bph") { const n = bsize(); return window.open(`/platzhalter?layout=binder&bs=${n}&from=${(BP - 1) * n + 1}&to=${BP * n}`, "_blank"); }
   if (e.target.id === "bgo") { const nr = +$("#bnr").value; return openBinder(nr ? slotOf(nr).page : +$("#bpage").value); }
   const sl = e.target.closest(".bslot"); if (!sl) return;
   if (+sl.dataset.n) openCards(`Nr. ${pad(sl.dataset.id)} ${sl.dataset.name} · ${slotTxt(sl.dataset.id)}`, `/api/cards?dex_id=${sl.dataset.id}`);
   else openBrowse(+sl.dataset.id);
 };
 $("#bbody").onchange = e => { if (e.target.id === "bpage") openBinder(+e.target.value); };
+/* Upgrade-Vorschläge: günstigste Fullart je Pokémon ohne Fullart im Binder */
+let UPG = {timer: null, items: []};
+const uParams = () => `lang=${$("#uLang").value}&scope=${$("#uScope").value}&budget=${encodeURIComponent($("#uBudget").value || "")}`;
+function openUpgrades() {
+  try { $("#uLang").value = localStorage.getItem("upgLang") || ($("#lang").value === "en" ? "en" : "de"); } catch (e) {}
+  $("#umodal").style.display = "block"; loadUpgrades();
+}
+async function loadUpgrades() {
+  const r = await (await fetch("/api/upgrades?" + uParams())).json(), p = r.progress || {};
+  UPG.items = r.items;
+  if (p.running) {
+    $("#ubody").innerHTML = `<p class="usum">${p.stage === "list" ? "Lade die Liste aller Fullart-Karten …" : `Hole Preise: ${p.done} von ${p.total} Karten …`}</p>`;
+    $("#uSearch").disabled = true;
+    clearTimeout(UPG.timer); UPG.timer = setTimeout(() => { if ($("#umodal").style.display === "block") loadUpgrades(); }, 1500);
+    return;
+  }
+  $("#uSearch").disabled = false;
+  const err = p.stage === "error" ? `<p>Die Kartendatenbank war nicht erreichbar: ${p.error}</p>` : "";
+  if (!r.targets) { $("#ubody").innerHTML = err + "<p>Alle Pokémon im Binder haben schon eine Fullart. Stark!</p>"; return; }
+  if (!r.items.length) {
+    $("#ubody").innerHTML = err + `<p>${r.targets} Pokémon ohne Fullart. Tippe auf „Fullarts suchen“, um Preise zu laden. Das dauert beim ersten Mal ein paar Minuten, danach geht es schneller.</p>`;
+    return;
+  }
+  const n = r.items.length;
+  $("#ubody").innerHTML = err + `<p class="usum">Für ${eur(r.total)} bekommst du ${n} neue Fullarts.</p>
+    <div class="ubar"><button id="uWishAll" class="alt">Alle auf die Wunschliste</button><button id="uCopy" class="alt">Einkaufsliste kopieren</button></div>
+    ${r.missing ? `<p><small>Für ${r.missing} Pokémon wurde (noch) keine Fullart mit Preis gefunden.</small></p>` : ""}
+    <div class="ulist">${r.items.map((it, i) => `<div class="uit">
+      <div class="uimg">${cardImg(it.card)}</div>
+      <div><b>Nr. ${pad(it.dex_id)} ${it.dex_name}</b><br>${it.card.name}<br><small>${it.card.set_name} ${it.card.local_id} · ${it.card.rarity || "–"}</small><div class="uprice">${eur(it.card.price)}</div></div>
+      <div class="unow">Im Binder: ${it.current ? `${it.current.name} (${it.current.set_name} ${it.current.local_id}, ${it.current.rarity || "–"})` : "noch keine Karte"}</div>
+      <div class="uact"><a class="lnk" href="${it.card.cm}" target="_blank" rel="noopener">Cardmarket</a>
+        <button class="alt" data-uw="${i}">${it.card.wished ? "Von Wunschliste entfernen" : "Auf die Wunschliste"}</button></div></div>`).join("")}</div>
+    <p><small>Preise: Cardmarket-Trend (Richtwerte), bis zu 7 Tage zwischengespeichert. „Fullarts suchen“ holt neue Preise.</small></p>`;
+}
+$("#upgBtn").onclick = openUpgrades;
+$("#phBtn").onclick = () => window.open(`/platzhalter?bs=${bsize()}`, "_blank");
+$("#uclose").onclick = () => { $("#umodal").style.display = "none"; clearTimeout(UPG.timer); };
+$("#uSearch").onclick = async () => { await post("/api/upgrades/refresh", {lang: $("#uLang").value, scope: $("#uScope").value}); loadUpgrades(); };
+$("#uLang").onchange = () => { try { localStorage.setItem("upgLang", $("#uLang").value); } catch (e) {} loadUpgrades(); };
+$("#uScope").onchange = loadUpgrades;
+$("#uBudget").onchange = loadUpgrades;
+$("#ubody").onclick = async e => {
+  const w = e.target.closest("[data-uw]");
+  if (w) {
+    const c = UPG.items[+w.dataset.uw].card;
+    await post("/api/wish", c.wished ? {action: "remove", card_id: c.id} : {action: "add", card: c});
+    return loadUpgrades();
+  }
+  if (e.target.id === "uWishAll") {
+    for (const it of UPG.items) if (!it.card.wished) await post("/api/wish", {action: "add", card: it.card});
+    toast("Wunschliste", `${UPG.items.length} Karten stehen jetzt auf der Wunschliste.`);
+    return loadUpgrades();
+  }
+  if (e.target.id === "uCopy") {
+    const txt = UPG.items.map(it => `${it.card.name} · ${it.card.set_name} ${it.card.local_id} · ${eur(it.card.price)}`).join("\n")
+      + `\n${TX("Summe")}: ${eur(UPG.items.reduce((a, it) => a + it.card.price, 0))}`;
+    try { await navigator.clipboard.writeText(txt); toast("Kopiert", "Die Einkaufsliste ist in der Zwischenablage."); } catch (er) { prompt("Einkaufsliste", txt); }
+  }
+  const im = e.target.closest(".uimg img"); if (im) openLb(im.src, im.alt);
+};
 $("#quizBtn").onclick = openQuiz;
 $("#qclose").onclick = () => $("#qmodal").style.display = "none";
 $("#qbody").onclick = e => {

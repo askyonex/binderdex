@@ -28,6 +28,8 @@ No account, no cloud, no API key. It runs as a desktop app on Windows and macOS,
 
 ## Features
 
+> **Easter egg for desktop users: the lights are buttons.** The three small lights next to the big camera lens in the header open hidden menus: 🔴 **red** = *Extras* (statistics, binder, quiz, grading check, upgrade suggestions, placeholders, update prices), 🟡 **yellow** = *settings* (design, binder page size, sounds, language), 🟢 **green** = *filter & sort* (a dark dot shows that a filter is active). Click a light again or press Esc to close it. On phones everything is in the burger menu behind **"Mein Pokédex"**.
+
 **Pokédex and binder**
 - **English, German and Spanish** (interface, Pokémon names, Pokédex entries, exports), switchable per device; more languages can be added with a dictionary file and a few lines of code ([docs/translating.md](docs/translating.md))
 - All Pokémon in national Pokédex order with progress bar; missing ones show as silhouettes
@@ -46,6 +48,8 @@ No account, no cloud, no API key. It runs as a desktop app on Windows and macOS,
 - **Grading check:** a pre-grade estimate (PSA scale) from photos: you measure the **centering** with lines and a magnifier against the published PSA limits, the AI judges corners, edges and surface, and the app shows a grade **range**, what limits it most and whether **sending it in is worth it** (you enter costs and market prices). Not affiliated with PSA, an estimate only ([docs/grading.md](docs/grading.md))
 - **Pack session:** count a whole display and get an evaluation at the end (total value, best cards, new Pokémon)
 - **Binder view:** page by page like a real binder (9 / 12 / 16 pockets), with a "page 3, slot 7" hint when you file a card
+- **Upgrade suggestions:** for every Pokémon in your binder without a full art the app finds the cheapest full art card you don't own yet and builds a shopping list with a total ("for €25 you get 9 new full arts"), optionally within a budget, one click to the wishlist or Cardmarket
+- **Printable binder placeholders:** card-size sheets (63 × 88 mm, 9 per A4 page) with number, name, silhouette and binder position for empty pockets; only missing Pokémon, those without a full art or all, per generation or number range, compact or laid out like your binder pages
 - **Price movement** since the last update (up / down, biggest winners and losers, wishlist cards that got cheaper)
 - **76 achievements** in 8 groups with progress bars and pop-ups, Pokémon of the day, a "Who's that Pokémon?" quiz, 7 colour themes and optional retro sounds
 - **Sets view:** all sets since 2017 in German, English and Japanese (Japanese sets with English names and fallback images), full card lists, add with one click
@@ -149,7 +153,7 @@ The app caches what it can and requests data in small batches. Please respect th
 
 - More UI languages (French, Italian, ...): contributions welcome, see [docs/translating.md](docs/translating.md)
 - Several collections (profiles) in one instance
-- Price alerts for wishlist cards, upgrade suggestions (better card for a Pokémon)
+- Price alerts for wishlist cards
 - Self-hosted fonts and OCR files (offline use, no CDN)
 - English code comments
 

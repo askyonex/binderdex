@@ -82,3 +82,11 @@ NFD
 &amp;
 · {0}
 {0} {1} ·
+/platzhalter?layout=binder&bs={0}&from={1}&to={2}
+lang={0}&scope={1}&budget={2}
+{0} ({1} {2}, {3})
+/platzhalter?bs={0}
+{0} · {1} {2} · {3}
+.uimg img
+Bug fixes
+Corrección de errores

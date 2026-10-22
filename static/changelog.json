@@ -2,6 +2,25 @@
  "_info": "Aenderungen je Version, neueste zuerst. Wird nach einem Update in der App angezeigt (in der Sprache der Oberflaeche) und als Text des GitHub-Releases verwendet. Vor jedem Release einen Eintrag fuer die neue Version anlegen, notfalls nur mit Fehlerbehebungen.",
  "versions": [
   {
+   "version": "1.3.0",
+   "date": "2026-10-22",
+   "de": [
+    "Neu: Upgrade-Vorschläge. Für Pokémon im Binder ohne Fullart findet die App die günstigste Fullart-Karte und baut eine Einkaufsliste mit Summe, wahlweise mit Budget, mit einem Klick auf die Wunschliste.",
+    "Neu: Druckbare Binder-Platzhalter in Kartengröße (63 × 88 mm) mit Nummer, Name, Silhouette und Binder-Position für leere Fächer, auch direkt aus der Binder-Ansicht für die aktuelle Seite.",
+    "Beides findest du am PC hinter der roten Lampe (Extras), auf dem Handy im Menü."
+   ],
+   "en": [
+    "New: upgrade suggestions. For Pokémon in your binder without a full art the app finds the cheapest full art card and builds a shopping list with the total, optionally within a budget, one click to the wishlist.",
+    "New: printable binder placeholders in card size (63 × 88 mm) with number, name, silhouette and binder position for empty pockets, also straight from the binder view for the current page.",
+    "On a computer you find both behind the red light (Extras), on a phone in the menu."
+   ],
+   "es": [
+    "Nuevo: sugerencias de mejora. Para los Pokémon de tu archivador sin full art, la app busca la carta full art más barata y crea una lista de compra con el total, opcionalmente con presupuesto, y con un clic a la lista de deseos.",
+    "Nuevo: marcadores imprimibles del tamaño de una carta (63 × 88 mm) con número, nombre, silueta y posición en el archivador para los huecos vacíos, también desde la vista del archivador para la página actual.",
+    "En el ordenador los encontrarás detrás de la luz roja (Extras), en el móvil en el menú."
+   ]
+  },
+  {
    "version": "1.2.1",
    "date": "2026-10-21",
    "de": [
