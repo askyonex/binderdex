@@ -2,7 +2,7 @@
  "_info": "Aenderungen je Version, neueste zuerst. Wird nach einem Update in der App angezeigt (in der Sprache der Oberflaeche) und als Text des GitHub-Releases verwendet. Vor jedem Release einen Eintrag fuer die neue Version anlegen, notfalls nur mit Fehlerbehebungen.",
  "versions": [
   {
-   "version": "1.3.0",
+   "version": "1.2.2",
    "date": "2026-10-22",
    "de": [
     "Neu: Upgrade-Vorschläge. Für Pokémon im Binder ohne Fullart findet die App die günstigste Fullart-Karte und baut eine Einkaufsliste mit Summe, wahlweise mit Budget, mit einem Klick auf die Wunschliste.",
