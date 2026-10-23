@@ -162,7 +162,7 @@ figure .noimg{width:200px}
 .uit{display:grid;grid-template-columns:64px 1fr;gap:6px 10px;align-items:start;padding:10px;background:var(--tile);border-radius:10px;box-shadow:0 0 0 2px var(--cyan)}
 .uit .uimg img{width:64px;border-radius:5px;display:block;cursor:zoom-in}.uit .unow{grid-column:1/-1;font-size:14px;opacity:.8}
 .uit .uprice{font-size:20px;font-weight:700}.uit .uact{grid-column:1/-1;display:flex;gap:8px;flex-wrap:wrap}
-.uit .uact a,.uit .uact button{font-size:14px;padding:5px 10px}
+.uit .uact a{font-size:14px;padding:5px 10px}.uit .uact button{font-size:9px;padding:8px 10px}
 .topg{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px}
 .ach{display:inline-block;margin:4px 6px 4px 0;padding:8px 12px;background:var(--tile);border-radius:8px;box-shadow:0 0 0 2px var(--yel);font-size:21px;color:#fff;line-height:1.1}
 .ach small{display:block;color:var(--mute);font-size:18px}.ach.lock{box-shadow:0 0 0 2px #1f4f5f;opacity:.5}
@@ -184,11 +184,11 @@ textarea{width:100%;padding:8px 10px;font:20px/1.1 var(--vt);background:var(--na
 .menubtn:active{transform:none;box-shadow:none}
 #tour{display:none;position:fixed;inset:0;z-index:40}
 #tour .thole{position:fixed;border-radius:14px;box-shadow:0 0 0 3px var(--yel,#ffcb05),0 0 0 9999px rgba(4,10,16,.78);transition:all .25s ease;pointer-events:none}
-#tour .tbub{position:fixed;width:min(380px,calc(100vw - 32px));background:var(--panel);border:3px solid var(--yel,#ffcb05);border-radius:16px;padding:16px 18px;color:#fff;box-shadow:0 10px 40px rgba(0,0,0,.5)}
+#tour .tbub{position:fixed;width:min(420px,calc(100vw - 32px));box-sizing:border-box;background:var(--panel);border:3px solid var(--yel,#ffcb05);border-radius:16px;padding:16px 18px;color:#fff;box-shadow:0 10px 40px rgba(0,0,0,.5)}
 #tour .tbub h3{margin:0 0 8px;font-size:22px;color:var(--yel,#ffcb05)}#tour .tbub p{margin:0 0 14px;font-size:19px;line-height:1.3}
-#tour .tnav{display:flex;align-items:center;gap:10px}#tour .tdots{flex:1;display:flex;gap:6px}
+#tour .tnav{display:flex;align-items:center;gap:10px}#tour .tdots{flex:1 0 100%;display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px}#tour .tdots:empty{display:none}#tour #tskip{margin-left:auto}
 #tour .tdots i{width:9px;height:9px;border-radius:50%;background:#4f8396}#tour .tdots i.on{background:var(--yel,#ffcb05)}
-#tour .tnav button{font-size:15px;padding:6px 12px}
+#tour .tnav{flex-wrap:wrap}#tour .tnav button{font-size:10px;padding:10px 12px;white-space:nowrap}
 @media (prefers-reduced-motion:reduce){#tour .thole{transition:none}}
 .foot{margin:0 40px 32px;color:var(--mute);font-size:18px;line-height:1.1;text-align:center}
 .foot .ver{display:block;margin-top:6px}.foot .ver a{color:var(--cyan);cursor:pointer;text-decoration:underline}

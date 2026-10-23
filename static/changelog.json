@@ -2,6 +2,25 @@
  "_info": "Aenderungen je Version, neueste zuerst. Wird nach einem Update in der App angezeigt (in der Sprache der Oberflaeche) und als Text des GitHub-Releases verwendet. Vor jedem Release einen Eintrag fuer die neue Version anlegen, notfalls nur mit Fehlerbehebungen.",
  "versions": [
   {
+   "version": "1.2.4",
+   "date": "2026-10-23",
+   "de": [
+    "Fehlerbehebungen",
+    "Einführung: Knöpfe passen jetzt sauber ins Fenster, auch auf dem Handy",
+    "Upgrade-Vorschläge: kleinere Knöpfe in der Kartenliste"
+   ],
+   "en": [
+    "Bug fixes",
+    "Intro: buttons now fit neatly into the window, also on phones",
+    "Upgrade suggestions: smaller buttons in the card list"
+   ],
+   "es": [
+    "Corrección de errores",
+    "Introducción: los botones ahora caben bien en la ventana, también en el móvil",
+    "Sugerencias de mejora: botones más pequeños en la lista de cartas"
+   ]
+  },
+  {
    "version": "1.2.3",
    "date": "2026-10-22",
    "de": [
