@@ -43,6 +43,7 @@ _tpg = {}  # TCGplayer-Kategorie -> (Zeit, {Set-Code: (groupId, Titel)})
 _eni = {}  # Set-ID -> (Zeit, {Nummer: Bild-Basis-URL}) der englischen TCGdex-Version
 _tpp = {}
 _tpl = {}  # Kategorie -> {groupId: Titel} aller TCGplayer-Gruppen
+_tpc = {}  # Kategorie -> {groupId: Kuerzel vor dem Doppelpunkt, z. B. 'ME'}
 _enc = {}  # Set-ID -> (Zeit, [(Nummer, Name, Bild)]) der englischen TCGdex-Karten  # (Kategorie, groupId) -> (Zeit, {Kartennummer: Bild-URL})
 # Generationen (Pokedex-Nummern) fuer Statistik und Filter
 GENS = [("I", "Kanto", 1, 151), ("II", "Johto", 152, 251), ("III", "Hoenn", 252, 386), ("IV", "Sinnoh", 387, 493),
@@ -602,6 +603,7 @@ def tp_groups(cat):
             gid = g.get("groupId") or g.get("GroupId")
             if gid:
                 _tpl.setdefault(cat, {})[gid] = (title.strip() if sep else code.strip())  # alle Gruppen fuer die Namenssuche
+                _tpc.setdefault(cat, {})[gid] = code.strip() if sep else ""
             if sep and title.strip() and gid:
                 out[norm_code(code)] = (gid, title.strip())
     except Exception:
@@ -653,7 +655,30 @@ def tp_group_for(lang, set_id):
             second = sc
     if best[0] >= 0.6 and best[0] - second >= 0.15:
         return cat, best[1]
-    return cat, None
+    return cat, promo_group(cat, set_id, info.get("name", ""))
+
+
+# Promo-Sets: TCGdex nennt sie z. B. "MEP Black Star Promos" (Kennung mep), TCGplayer "ME: Mega Evolution Promo".
+# Zuordnung ueber die Serie (Kennung ohne das "p" am Ende) und das Wort "Promo" im Gruppennamen.
+PROMO_SERIES = {"me": "mega evolution", "sv": "scarlet violet", "swsh": "sword shield", "sm": "sun moon",
+                "xy": "xy", "bw": "black white", "hgss": "heartgold soulsilver", "dp": "diamond pearl"}
+
+
+def promo_group(cat, set_id, set_name=""):
+    sid = norm_code(set_id)
+    if not (sid.endswith("p") and "promo" in str(set_name).lower() or sid in {k + "p" for k in PROMO_SERIES}):
+        return None
+    base = sid[:-1]
+    words = set(PROMO_SERIES.get(base, base).split())
+    hits = []
+    for gid, title in (_tpl.get(cat) or {}).items():
+        t = name_tokens(title)
+        if not any(x.startswith("promo") for x in t):
+            continue
+        code = norm_code(_tpc.get(cat, {}).get(gid, ""))
+        if code in (base, sid) or words <= t or base in t:
+            hits.append((len(t), gid, title))
+    return (min(hits)[1], min(hits)[2]) if hits else None
 
 
 def ja_set_names():
@@ -702,6 +727,10 @@ def tp_images(lang, set_id):
             names[k] = (img, special)
     out = {k: v[0] for k, v in names.items()}
     out.update({n: v[0] for n, v in best.items()})
+    for n, v in best.items():  # Promo-Nummern wie "MEP001" oder "SVP 001" auch unter "1" finden
+        m = re.fullmatch(r"[a-z]+\s*0*(\d+)", n)
+        if m and m.group(1) not in out:
+            out[m.group(1)] = v[0]
     return out
 
 

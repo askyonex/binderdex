@@ -2,6 +2,19 @@
  "_info": "Aenderungen je Version, neueste zuerst. Wird nach einem Update in der App angezeigt (in der Sprache der Oberflaeche) und als Text des GitHub-Releases verwendet. Vor jedem Release einen Eintrag fuer die neue Version anlegen, notfalls nur mit Fehlerbehebungen.",
  "versions": [
   {
+   "version": "1.2.5",
+   "date": "2026-10-28",
+   "de": [
+    "Promo-Karten (z. B. MEP, SVP, SWSH- und SM-Promos) zeigen jetzt Kartenbilder, wenn die Kartendatenbank keine hat"
+   ],
+   "en": [
+    "Promo cards (e.g. MEP, SVP, SWSH and SM promos) now show card images when the card database has none"
+   ],
+   "es": [
+    "Las cartas promocionales (p. ej. MEP, SVP, promos SWSH y SM) ahora muestran imágenes cuando la base de datos de cartas no las tiene"
+   ]
+  },
+  {
    "version": "1.2.4",
    "date": "2026-10-23",
    "de": [
